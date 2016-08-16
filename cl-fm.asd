@@ -9,6 +9,8 @@
                #:cl-ppcre)
   :serial t
   :components ((:file "package")
+	       (:file "xattr")
+	       (:file "filebox")
                (:file "cl-fm")
-	       (:file "util")))
+))
 

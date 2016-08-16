@@ -10,10 +10,21 @@
      #'(lambda (fname) (push fname list))
      :directories nil)
     list))
-
+(defun list-directory (dir)
+  (loop for path in (cl-fad:list-directory dir)
+     unless (cl-fad:directory-exists-p path)
+       collect path))
 
 (defun load-flist (&key (wd "/media/stacksmith/TEMP/Trash") (recurse nil))
   "load a file list, recuring if needed"
   (if recurse
       (walk-directory wd)
-      (cl-fad:list-directory wd)))
+      (list-directory wd)))
+
+(defparameter *input* nil)
+(defparameter *wd* nil)
+(defparameter *selected* nil)
+(defun iload (&key (in *input*) (sub nil))
+  (setf *wd* in
+   *input* (load-flist :wd in  :recurse sub)))
+(defun iselect (&key (regex ".*")))
