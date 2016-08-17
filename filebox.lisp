@@ -17,6 +17,7 @@
 (defconstant COL-SIZE 2)
 (defconstant COL-DATE 3)
 
+;; Data stored in the model can be sorted on etc.  Other data is stored in fentry.
 (defstruct fentry name size mod q)
 (defun load-fentries (dir)
   (map 'vector
@@ -148,12 +149,30 @@
 				  'gtk-list-store
 				  :column-types '("guint" "gchararray" "gint64" "guint")))))
     (setf (filebox-widget fb)
-	  (create-filebox-widget (filebox-store fb)))
-    
-	  
-	  
+	  (create-filebox-widget (filebox-store fb))) 
 	  
     (setf (filebox-data fb) (load-fentries (filebox-path fb)))
     (fb-refill fb)
+    ;; Double-click
+    (g-signal-connect
+     (filebox-widget fb) "row-activated"
+     (lambda (tv path column)
+       (format t "~A ~A ~A  ~%" tv path column)
+       (let* ((model (gtk-tree-view-get-model tv))
+	      (iter (gtk-tree-model-get-iter model path))
+	      ;(sel (gtk-tree-view-get-selection tv))
+	      (path (merge-pathnames (filebox-path fb)
+				     (gtk-tree-model-get-value model iter COL-NAME))))
+					;(format t "ITER ~A ~%" path )
+	 (xxx path)
+	 ;TODO: figure out application
+	 (external-program:start "vlc" (list path))
+	 ;; selected
+;	 (gtk-tree-selection-selected-foreach sel (lambda (mod path iter) (format t "MULT SEL ~A~%" (gtk-tree-model-get-value mod iter COL-ID))))
+	 )))
     fb)
   )
+
+
+
+;-----------------------
