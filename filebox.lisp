@@ -11,7 +11,7 @@
       (format stream "")))
 
 
-
+;; Some data is stored in the gtk store...
 (defconstant COL-ID 0)
 (defconstant COL-NAME 1)
 (defconstant COL-SIZE 2)
@@ -23,7 +23,7 @@
        #'(lambda (name)
 	   (make-fentry :name
 			(file-namestring (string-right-trim "/" (namestring name)))
-			:size 0
+			:size -1
 			:mod 0))
        (cl-fad:list-directory dir)))
 
