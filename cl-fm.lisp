@@ -90,8 +90,7 @@
 			    (leave-gtk-main)))
 	
 	(gtk-widget-show-all *window*)
-	(data-postprocess fb)
-	(fb-refill fb)
+	
 	
 	))))
 

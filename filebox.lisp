@@ -1,6 +1,7 @@
 (in-package :cl-fm)
 ;; filebox - a widget containing a list of files
-
+(defconstant GDK-KEY-F3 #XFFC0)
+(defconstant GDK-KEY-F5 #XFFC2)
 (defun print-date (stream date)
   "Given a universal time date, outputs to a stream."
   (if (and date (> date 0))
@@ -19,6 +20,7 @@
 
 ;; Data stored in the model can be sorted on etc.  Other data is stored in fentry.
 (defstruct fentry name size mod q)
+
 (defun load-fentries (dir)
   (map 'vector
        #'(lambda (name)
@@ -48,7 +50,7 @@
 (defparameter *color-black* (make-gdk-color :red 0 :green 0 :blue 0) )
 	  
 (defun data-postprocess (fb)
-  "secondary"
+  "secondary pass - get sizes etc"
   (loop for fe across (filebox-data fb) do
        (let ((path (fentry-path fe (filebox-path fb)))) ;build full filepath
 	 (unless (cl-fad:directory-exists-p path ) ;exlude directories
@@ -75,7 +77,9 @@
 	;(with-output-to-string (str) (format str "~:d" (fentry-size fentry)))
 	(fentry-mod fentry)
 ;	(with-output-to-string (str) (print-date str (fentry-mod fentry)))
-	)))
+	))
+ ; (format t "REFILL..")
+  )
 ;;------------------------------------------------------------------------------
 ;; custom routines - called by renderer
 ;;
@@ -143,6 +147,14 @@
     (gtk-tree-view-column-set-visible (gtk-tree-view-get-column view 0) nil)
     view))
 
+
+(defun filebox-reload (fb)
+  "reload all data"
+  (setf (filebox-data fb) (load-fentries (filebox-path fb)))
+  (fb-refill fb)
+  (data-postprocess fb)
+  (fb-refill fb)
+  )
 (defun create-filebox (path)
   (let ((fb (make-filebox :path path
 			  :store (make-instance
@@ -151,8 +163,17 @@
     (setf (filebox-widget fb)
 	  (create-filebox-widget (filebox-store fb))) 
 	  
-    (setf (filebox-data fb) (load-fentries (filebox-path fb)))
-    (fb-refill fb)
+   
+    
+    (g-signal-connect
+     (filebox-widget fb) "key-press-event"
+     (lambda (tv eventkey)
+       (format t "PRESS: [~X ~A]~%" (gdk-event-key-keyval eventkey) (gdk-event-key-keyval eventkey))
+       (case (gdk-event-key-keyval eventkey)
+	 (#XFFC2 (format t "OK~%")  (filebox-reload fb) );
+	 (otherwise (format t "NOPE"))
+	 )
+       t))
     ;; Double-click
     (g-signal-connect
      (filebox-widget fb) "row-activated"
@@ -170,6 +191,7 @@
 	 ;; selected
 ;	 (gtk-tree-selection-selected-foreach sel (lambda (mod path iter) (format t "MULT SEL ~A~%" (gtk-tree-model-get-value mod iter COL-ID))))
 	 )))
+     (filebox-reload fb)
     fb)
   )
 
