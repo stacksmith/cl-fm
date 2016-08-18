@@ -1,7 +1,7 @@
 (in-package :cl-fm)
 ;; filebox - a widget containing a list of files
-(defconstant GDK-KEY-F3 #XFFC0)
-(defconstant GDK-KEY-F5 #XFFC2)
+(defconstant GTK-KEY-F3 #XFFC0)
+(defconstant GTK-KEY-F5 #XFFC2)
 (defun print-date (stream date)
   "Given a universal time date, outputs to a stream."
   (if (and date (> date 0))
@@ -135,6 +135,18 @@
 	(create-filebox-column COL-SIZE "Size" :align 1.0 :custom #'custom-size)
 	(create-filebox-column COL-DATE "Mod" :custom #'custom-date)))
 
+(defun foreach-selected-file (fb func)
+  "func is (lambda (model path iterator).."
+  (gtk-tree-selection-selected-foreach
+   (gtk-tree-view-get-selection (filebox-widget fb))	;extract selection
+   (lambda (model path iterator)
+     (let ((pathname (merge-pathnames (filebox-path fb)
+				      (gtk-tree-model-get-value model iterator COL-NAME))))
+       (funcall func pathname)))
+   ))
+
+
+
 (defun create-filebox-widget (model)
   "create gtk widget"
   (let ((view (make-instance 'gtk-tree-view
@@ -169,11 +181,21 @@
      (filebox-widget fb) "key-press-event"
      (lambda (tv eventkey)
        (format t "PRESS: [~X ~A]~%" (gdk-event-key-keyval eventkey) (gdk-event-key-keyval eventkey))
-       (case (gdk-event-key-keyval eventkey)
-	 (#XFFC2 (format t "OK~%")  (filebox-reload fb) );
-	 (otherwise (format t "NOPE"))
+       (let ((keyval (gdk-event-key-keyval eventkey)))
+	 (cond
+	   ((eql keyval GTK-KEY-F3)
+	    (foreach-selected-file fb (lambda (filename) (format t "~A~%" filename))) )
+	   ((eql keyval GTK-KEY-F5) (format t "OK~%")  (filebox-reload fb) )
+	   ((and (>= keyval #x30)
+		 (<= keyval #x39))
+	    (format t "0~%")
+	    (foreach-selected-file fb (lambda (filename)
+					(q-set (- keyval #x30) filename)))
+	    (filebox-reload fb) )
+	   (t (format t "NOPE")))
 	 )
-       t))
+       t ;do not propagate
+       ))
     ;; Double-click
     (g-signal-connect
      (filebox-widget fb) "row-activated"
