@@ -12,28 +12,18 @@
       (format stream "")))
 
 
-;; Some data is stored in the gtk store...
 (defconstant COL-ID 0)
 (defconstant COL-NAME 1)
 (defconstant COL-SIZE 2)
 (defconstant COL-DATE 3)
+(defconstant COL-Q 4)
 
-;; Data stored in the model can be sorted on etc.  Other data is stored in fentry.
-(defstruct fentry name size mod q)
 
-(defun load-fentries (dir)
-  (map 'vector
-       #'(lambda (name)
-	   (make-fentry :name
-			(file-namestring (string-right-trim "/" (namestring name)))
-			:size -1
-			:mod 0))
-       (cl-fad:list-directory dir)))
 
-(defun fentry-path (fentry directory)
+#|(defun fentry-path (fentry directory)
   "convert fentry name into full path"
   (merge-pathnames directory (fentry-name fentry)))
-
+|#
 
 (defparameter *color-q*
   (vector  (make-gdk-color :red 35000 :green 00000 :blue 0) 
@@ -48,38 +38,71 @@
 	   (make-gdk-color :red 00000 :green 35000 :blue 0)))
 
 (defparameter *color-black* (make-gdk-color :red 0 :green 0 :blue 0) )
-	  
+(defun q-color (q) ;TODO: range-check q
+  (if (= q #XF) *color-black*
+      (elt *color-q* q ))
+  )
+					;
+;; TODO: perhaps optimize file access for length date and q?
+;; TODO: gtk-list-store-set is buggy... See if it can be rewritten?
 (defun data-postprocess (fb)
-  "secondary pass - get sizes etc"
-  (loop for fe across (filebox-data fb) do
-       (let ((path (fentry-path fe (filebox-path fb)))) ;build full filepath
-	 (unless (cl-fad:directory-exists-p path ) ;exlude directories
-	   (setf (fentry-size fe)  (with-open-file (in path) (file-length in))
-		 (fentry-mod fe) (file-write-date path)
-		 (fentry-q fe) (q-get path)
-		 (fentry-q fe) (q-get path))
-	   ;(format t "[~A ~A ~A]~%" (fentry-q fe) (q-get path) path )
-	   ))))
+  (gtk-tree-model-foreach
+   (filebox-store fb)
+   (lambda (model path iter)
+     (let ((fname (merge-pathnames (filebox-path fb) (first (gtk-tree-model-get model iter COL-NAME))))
+	   
+	   ) ;build full filepath
+       (unless (cl-fad:directory-exists-p fname)
+	 (destructuring-bind (id name size date q)
+	     (gtk-tree-model-get model iter 0 1 2 3 4)
+	   (setf size (with-open-file (in fname) (file-length in))
+		 date (file-write-date fname)
+		 q (q-get fname))
+	   (unless q (setf q #XF))
+	   (if (or (< q 0) (> q 15)) (setf q #XF)) ;TODO: handle range check better !!!
+	   
+	     (format t "~A \"~A\" ~A ~A ~A ~%" id name size date q)
+	     (gtk-list-store-set model iter  id name size date q )
+	       
+	       )
+	 
+	 )
+       
+       )
+     nil)))
 
-(defstruct filebox widget store path data)
+(defstruct filebox widget store path)
+   
+   #|"secondary pass - get sizes etc"
+   (loop for fe across (filebox-data fb) do
+   (let
+   ((path (fentry-path fe (filebox-path fb)))) ;build full filepath ;
+   (unless (cl-fad:directory-exists-p path ) ;exlude directories
+   (setf (fentry-size fe)  (with-open-file (in path) (file-length in))
+   (fentry-mod fe) (file-write-date path)
+   (fentry-q fe) (q-get path)
+   (fentry-q fe) (q-get path))
+					;(format t "[~A ~A ~A]~%" (fentry-q fe) (q-get path) path ) ; ; ;
+   )))
+   |#
+
+   
 
 (defun fb-refill (fb)
-  "reload the gtk store with data"
-  (gtk-list-store-clear (filebox-store fb))
-  (loop for i from 1 to 1000
-     for fentry across (filebox-data fb) do
-       (gtk-list-store-set
-	(filebox-store fb)
-	(gtk-list-store-append (filebox-store fb))
-	i
-	(fentry-name fentry)
-	(fentry-size fentry)
-	;(with-output-to-string (str) (format str "~:d" (fentry-size fentry)))
-	(fentry-mod fentry)
-;	(with-output-to-string (str) (print-date str (fentry-mod fentry)))
-	))
- ; (format t "REFILL..")
-  )
+  "clear gtk store and reload store with data from filesystem"
+  (let ((store (filebox-store fb)))
+    (gtk-list-store-clear store)
+    (loop for file-name in (cl-fad:list-directory (filebox-path fb))
+       for i from 1 to 10000
+       do (gtk-list-store-set store (gtk-list-store-append store)
+			      i          ;ID
+			      (file-namestring (string-right-trim "/" (namestring file-name) )) ;NAME
+			      -1         ;SIZE
+			      0          ;DATE
+			      #xf        ;Q
+			      ))
+    )
+    )
 ;;------------------------------------------------------------------------------
 ;; custom routines - called by renderer
 ;;
@@ -91,11 +114,12 @@
 
 (defun custom-name (column renderer model iterator)
   (declare (ignore column))
-  (let* ((id (- (first (gtk-tree-model-get model iterator COL-ID)) 1))
-	 (fentry (elt (filebox-data *fb*) id))
-	 (q (fentry-q fentry))
+  (let* (;(id (1- (first (gtk-tree-model-get model iterator COL-ID))))
+	 
+					;(fentry (elt (filebox-data *fb*) id))
+	 (q (first (gtk-tree-model-get model iterator COL-Q)) )
 	 (col (if q (elt *color-q* q) *color-black*)))
-    (setf (gtk-cell-renderer-text-foreground-gdk renderer) col)
+    (setf (gtk-cell-renderer-text-foreground-gdk renderer) (q-color q))
     
 #|    (setf (gtk-cell-renderer-text-background-gdk renderer)
 	  (if (= 0 (fentry-size fentry))
@@ -116,10 +140,11 @@
 ;  (format t "DATE")
   )
 
-(defun create-filebox-column (number title &key (custom nil) (align nil))
+(defun create-filebox-column (number title &key (custom nil) (align nil) )
   "helper - create a single column"
   (let* ((renderer (gtk-cell-renderer-text-new))
-	 (column (gtk-tree-view-column-new-with-attributes title renderer "text" number)))
+	 (column (gtk-tree-view-column-new-with-attributes title renderer
+							   "text" number)))
     (setf (gtk-cell-renderer-text-scale-set renderer) t)
     (setf (gtk-cell-renderer-text-scale renderer) 0.8)
     (when align (setf (gtk-cell-renderer-xalign renderer) align)) ;align data within cell
@@ -133,7 +158,8 @@
   (list (create-filebox-column COL-ID "#" :align 1.0 :custom #'custom-id)
 	(create-filebox-column COL-NAME "Filename" :custom #'custom-name)
 	(create-filebox-column COL-SIZE "Size" :align 1.0 :custom #'custom-size)
-	(create-filebox-column COL-DATE "Mod" :custom #'custom-date)))
+	(create-filebox-column COL-DATE "Mod" :custom #'custom-date)
+	(create-filebox-column COL-Q    "Q" )))
 
 (defun foreach-selected-file (fb func)
   "func is (lambda (model path iterator).."
@@ -155,23 +181,24 @@
 	 (gtk-tree-view-append-column view column))
     (gtk-tree-view-set-rules-hint view 1) ;display stripes
     (gtk-tree-selection-set-mode (gtk-tree-view-get-selection view) :multiple)
-    ;invisible id column
-    (gtk-tree-view-column-set-visible (gtk-tree-view-get-column view 0) nil)
+    ;invisible columns
+    (gtk-tree-view-column-set-visible (gtk-tree-view-get-column view COL-ID) nil)
+    (gtk-tree-view-column-set-visible (gtk-tree-view-get-column view COL-Q) nil)
     view))
 
 
 (defun filebox-reload (fb)
   "reload all data"
-  (setf (filebox-data fb) (load-fentries (filebox-path fb)))
   (fb-refill fb)
   (data-postprocess fb)
-  (fb-refill fb)
+  ;(fb-refill fb)
   )
 (defun create-filebox (path)
   (let ((fb (make-filebox :path path
 			  :store (make-instance
 				  'gtk-list-store
-				  :column-types '("guint" "gchararray" "gint64" "guint")))))
+				                 ;; ID        NAME       SIZE    DATE    Q
+				  :column-types '("guint" "gchararray" "gint64" "guint" "guint")))))
     (setf (filebox-widget fb)
 	  (create-filebox-widget (filebox-store fb))) 
 	  
