@@ -28,6 +28,11 @@
 	(create-column COL-DATE "Mod" :custom #'custom-date)
 	(create-column COL-Q    "Q" )))
 
+(defun create-model ()
+  (make-instance 'gtk-list-store
+		                 ;; ID        NAME       SIZE    DATE    Q
+		 :column-types '("guint" "gchararray" "gint64" "guint" "guint")))
+
 (defun model-refill (store path)
   "clear gtk store and reload store with data from filesystem"
   (gtk-list-store-clear store)
@@ -43,11 +48,12 @@
 
 (defun model-postprocess (store fpath)
   "across all files, update size, date and q"
+  (format t "XXXXXXXXXXXXXXXXXXXXXX~%")
   (gtk-tree-model-foreach
    store
    (lambda (model path iter)
      (declare (ignore path))
-     (let ((fname (merge-pathnames fpath (first (gtk-tree-model-get model iter COL-NAME))))
+     (let ((fname (merge-pathnames fpath (gtk-tree-model-get-value model iter COL-NAME)))
 	   
 	   ) ;build full filepath
        ;(unless (cl-fad:directory-exists-p fname))
@@ -59,5 +65,23 @@
 					;    (format t "~A \"~A\" ~A ~A ~A ~%" id name size date q)
 	 (unless q (setf q #XF))
 	 (if (or (< q 0) (> q 15)) (setf q #XF)) ;TODO: handle range check better !!!
-	 (gtk-list-store-set model iter  id name size date q )))
+	 (gtk-list-store-set model iter  id name size date q )
+	))
      nil)))
+
+
+(defun model-set-q (model path iterator directory value )
+  "called to modify q in file and model"
+  (let ((pathname (merge-pathnames directory
+				   (gtk-tree-model-get-value model iterator COL-NAME))))
+    (q-set value pathname))
+  (gtk-list-store-set-value model iterator COL-Q value)
+  (gtk-tree-model-row-changed model path iterator ))
+
+
+(defun model-row-changed (model tp iter)
+  (format t "~A ROW-CHANGED ~A~%" (get-universal-time) (first (gtk-tree-model-get model iter COL-ID)
+							      )))
+
+(defun model-init (model)
+  (g-signal-connect model "row-changed" #'model-row-changed))

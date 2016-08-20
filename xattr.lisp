@@ -27,10 +27,10 @@
 		    )))
 	  (if (= 0 res) 
 	      (progn
-		(format t "~A SUCCESS SIZE ~A~%~%" path (mem-aref size :int) )
+		;(format t "~A SUCCESS SIZE ~A~%~%" path (mem-aref size :int) )
 		(setf v (- (mem-aref buf :char) 48)))
 	      (progn
-		(format t "~A FAILED SIZE ~A~%" path (mem-aref size :int) )
+		;(format t "~A FAILED SIZE ~A~%" path (mem-aref size :int) )
 		(setf v 15))))))
         v))
 ;;TODO: fix to smaller buffer

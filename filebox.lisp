@@ -2,6 +2,7 @@
 ;; filebox - a widget containing a list of files
 (defconstant GTK-KEY-F3 #XFFC0)
 (defconstant GTK-KEY-F5 #XFFC2)
+
 (defun print-date (stream date)
   "Given a universal time date, outputs to a stream."
   (if (and date (> date 0))
@@ -38,60 +39,50 @@
 
 (defstruct filebox widget store path)
   
-   
-   
 
-(defun fb-refill (fb)
-  "clear gtk store and reload store with data from filesystem"
-)
 ;;------------------------------------------------------------------------------
 ;; custom routines - called by renderer
 ;;
 (defun custom-id (column renderer model iterator)
   "id column custom render data function"
+  (declare (ignore column))
 ;  (format t "~A ~%" 	  (gtk-tree-model-get model iterator 1 ))
   (setf (gtk-cell-renderer-text-background-gdk renderer)
 	(make-gdk-color :red 65000 :green 0 :blue 0) ) )
 
 (defun custom-name (column renderer model iterator)
   (declare (ignore column))
-  (let* (;(id (1- (first (gtk-tree-model-get model iterator COL-ID))))
-	 
-					;(fentry (elt (filebox-data *fb*) id))
-	 (q (first (gtk-tree-model-get model iterator COL-Q)) )
-	 (col (if q (elt *color-q* q) *color-black*)))
-    (setf (gtk-cell-renderer-text-foreground-gdk renderer) (q-color q))
-    
-#|    (setf (gtk-cell-renderer-text-background-gdk renderer)
-	  (if (= 0 (fentry-size fentry))
-	      (make-gdk-color :red 32000 :green 32000 :blue 32000)
-	      (make-gdk-color :red 65000 :green 65000 :blue 65000)) )
-)
-|#))
+  
+  (setf (gtk-cell-renderer-text-foreground-gdk renderer)
+	(q-color (first (gtk-tree-model-get model iterator COL-Q)))))
 
 (defun custom-size (column renderer model iterator)
+  (declare (ignore column))
   (let ((size (first (gtk-tree-model-get model iterator COL-SIZE))))
     (if (> size 0)
 	(setf (gtk-cell-renderer-text-text renderer)
 	      (with-output-to-string (str) (format str "~:d" size))))))
+
 (defun custom-date (column renderer model iterator)
-  (let ((date (first (gtk-tree-model-get model iterator  3))))
+  (declare (ignore column))
+  (let ((date (first (gtk-tree-model-get model iterator COL-DATE))))
     (setf (gtk-cell-renderer-text-text renderer)
 	  (with-output-to-string (str) (print-date str date))))
 ;  (format t "DATE")
   )
 
 
-
 (defun foreach-selected-file (fb func)
   "func is (lambda (model path iterator).."
   (gtk-tree-selection-selected-foreach
    (gtk-tree-view-get-selection (filebox-widget fb))	;extract selection
-   (lambda (model path iterator)
-     (let ((pathname (merge-pathnames (filebox-path fb)
-				      (gtk-tree-model-get-value model iterator COL-NAME))))
-       (funcall func pathname)))
-   ))
+   func)
+ #| (lambda (model path iterator)
+    (let ((pathname (merge-pathnames (filebox-path fb)
+				     (gtk-tree-model-get-value model iterator COL-NAME)))))
+    (funcall func model path iterator filepath ))
+ |#
+ )
 
 
 
@@ -116,13 +107,11 @@
   )
 (defun create-filebox (path)
   (let ((fb (make-filebox :path path
-			  :store (make-instance
-				  'gtk-list-store
-				                 ;; ID        NAME       SIZE    DATE    Q
-				  :column-types '("guint" "gchararray" "gint64" "guint" "guint")))))
+			  :store (create-model))))
     (setf (filebox-widget fb)
 	  (create-filebox-widget (filebox-store fb))) 
-	  
+
+    (model-init (filebox-store fb))
     ;; wiring
     (g-signal-connect
      (filebox-widget fb) "key-press-event"
@@ -137,9 +126,13 @@
 	   ((and (>= keyval #x30)
 		 (<= keyval #x39))
 	    (format t "0~%")
-	    (foreach-selected-file fb (lambda (filename)
-					(q-set (- keyval #x30) filename)))
-	    (filebox-reload fb) )
+	   
+	    (foreach-selected-file
+	     fb
+	     (lambda (model path iterator)
+	       (model-set-q model path iterator (filebox-path fb) (- keyval #x30))))
+					;(filebox-reload fb)
+	    )
 	   (t (format t "NOPE")))
 	 )
        t ;do not propagate
