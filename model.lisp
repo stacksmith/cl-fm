@@ -59,16 +59,13 @@
        ;(unless (cl-fad:directory-exists-p fname))
        (let ((size (with-open-file (in fname) (file-length in)))
 	     (date (file-write-date fname))
-	     (q (q-get fname)))
-					;    (format t "~A \"~A\" ~A ~A ~A ~%" id name size date q)
+	     (q (q-get fname)))	;    (format t "~A \"~A\" ~A ~A ~A ~%" id name size date q)
 	 (unless q (setf q #XF))
 	 (if (or (< q 0) (> q 15)) (setf q #XF)) ;TODO: handle range check better !!!
 	 (gtk-list-store-set-value model iter COL-SIZE size)
 	 (gtk-list-store-set-value model iter COL-DATE date)
-	 (gtk-list-store-set-value model iter COL-Q q))
-;	 (gtk-list-store-set model iter  id name size date q )
-	)
-     nil)))
+	 (gtk-list-store-set-value model iter COL-Q q)))
+     nil))) ;continue walk
 
 
 (defun model-set-q (model path iterator directory value )
