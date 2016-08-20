@@ -46,27 +46,28 @@
 			    #xf        ;Q
 			    )))
 
-(defun model-postprocess (store fpath)
+(defun model-postprocess (store directory)
   "across all files, update size, date and q"
   (format t "XXXXXXXXXXXXXXXXXXXXXX~%")
   (gtk-tree-model-foreach
    store
    (lambda (model path iter)
      (declare (ignore path))
-     (let ((fname (merge-pathnames fpath (gtk-tree-model-get-value model iter COL-NAME)))
+     (let ((fname (merge-pathnames directory (gtk-tree-model-get-value model iter COL-NAME)))
 	   
 	   ) ;build full filepath
        ;(unless (cl-fad:directory-exists-p fname))
-       (destructuring-bind (id name size date q)
-	   (gtk-tree-model-get model iter 0 1 2 3 4)
-	 (setf size (with-open-file (in fname) (file-length in))
-	       date (file-write-date fname)
-	       q (q-get fname))
+       (let ((size (with-open-file (in fname) (file-length in)))
+	     (date (file-write-date fname))
+	     (q (q-get fname)))
 					;    (format t "~A \"~A\" ~A ~A ~A ~%" id name size date q)
 	 (unless q (setf q #XF))
 	 (if (or (< q 0) (> q 15)) (setf q #XF)) ;TODO: handle range check better !!!
-	 (gtk-list-store-set model iter  id name size date q )
-	))
+	 (gtk-list-store-set-value model iter COL-SIZE size)
+	 (gtk-list-store-set-value model iter COL-DATE date)
+	 (gtk-list-store-set-value model iter COL-Q q))
+;	 (gtk-list-store-set model iter  id name size date q )
+	)
      nil)))
 
 
