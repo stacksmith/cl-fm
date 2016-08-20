@@ -24,9 +24,13 @@
 		    :int 0
 		    :int				;return
 		    )))
-	  (if (= 0 res)
-	      (setf v (- (mem-aref buf :char) 48)) 
-	      (setf v nil)))))
+	  (if (= 0 res) 
+	      (progn
+		(format t "~A SUCCESS ~%" path)
+		(setf v (- (mem-aref buf :char) 48)))
+	      (progn
+		(format t "~A FAILED~%" path)
+		(setf v 15))))))
         v))
 ;;TODO: fix to smaller buffer
 (defun q-set (value path)

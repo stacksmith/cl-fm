@@ -46,30 +46,8 @@
 ;; TODO: perhaps optimize file access for length date and q?
 ;; TODO: gtk-list-store-set is buggy... See if it can be rewritten?
 (defun data-postprocess (fb)
-  (gtk-tree-model-foreach
-   (filebox-store fb)
-   (lambda (model path iter)
-     (let ((fname (merge-pathnames (filebox-path fb) (first (gtk-tree-model-get model iter COL-NAME))))
-	   
-	   ) ;build full filepath
-       (unless (cl-fad:directory-exists-p fname)
-	 (destructuring-bind (id name size date q)
-	     (gtk-tree-model-get model iter 0 1 2 3 4)
-	   (setf size (with-open-file (in fname) (file-length in))
-		 date (file-write-date fname)
-		 q (q-get fname))
-	   (unless q (setf q #XF))
-	   (if (or (< q 0) (> q 15)) (setf q #XF)) ;TODO: handle range check better !!!
-	   
-	     (format t "~A \"~A\" ~A ~A ~A ~%" id name size date q)
-	     (gtk-list-store-set model iter  id name size date q )
-	       
-	       )
-	 
-	 )
-       
-       )
-     nil)))
+  (model-postprocess (filebox-store fb) (filebox-path fb))
+)
 
 (defstruct filebox widget store path)
    
@@ -90,19 +68,7 @@
 
 (defun fb-refill (fb)
   "clear gtk store and reload store with data from filesystem"
-  (let ((store (filebox-store fb)))
-    (gtk-list-store-clear store)
-    (loop for file-name in (cl-fad:list-directory (filebox-path fb))
-       for i from 1 to 10000
-       do (gtk-list-store-set store (gtk-list-store-append store)
-			      i          ;ID
-			      (file-namestring (string-right-trim "/" (namestring file-name) )) ;NAME
-			      -1         ;SIZE
-			      0          ;DATE
-			      #xf        ;Q
-			      ))
-    )
-    )
+  (model-refill (filebox-store fb) (filebox-path fb)  ) )
 ;;------------------------------------------------------------------------------
 ;; custom routines - called by renderer
 ;;
@@ -140,26 +106,7 @@
 ;  (format t "DATE")
   )
 
-(defun create-filebox-column (number title &key (custom nil) (align nil) )
-  "helper - create a single column"
-  (let* ((renderer (gtk-cell-renderer-text-new))
-	 (column (gtk-tree-view-column-new-with-attributes title renderer
-							   "text" number)))
-    (setf (gtk-cell-renderer-text-scale-set renderer) t)
-    (setf (gtk-cell-renderer-text-scale renderer) 0.8)
-    (when align (setf (gtk-cell-renderer-xalign renderer) align)) ;align data within cell
-    (when custom (gtk-tree-view-column-set-cell-data-func ;custom renderer data
-		  column renderer custom))
-    (gtk-tree-view-column-set-sort-column-id column number)
-    (gtk-tree-view-column-set-reorderable column t)
-    column))
-(defun create-filebox-columns ()
-  ;; Create columns
-  (list (create-filebox-column COL-ID "#" :align 1.0 :custom #'custom-id)
-	(create-filebox-column COL-NAME "Filename" :custom #'custom-name)
-	(create-filebox-column COL-SIZE "Size" :align 1.0 :custom #'custom-size)
-	(create-filebox-column COL-DATE "Mod" :custom #'custom-date)
-	(create-filebox-column COL-Q    "Q" )))
+
 
 (defun foreach-selected-file (fb func)
   "func is (lambda (model path iterator).."
@@ -177,13 +124,13 @@
   "create gtk widget"
   (let ((view (make-instance 'gtk-tree-view
 			     :model model))) 
-    (loop for column in (create-filebox-columns) do
+    (loop for column in (create-columns) do
 	 (gtk-tree-view-append-column view column))
     (gtk-tree-view-set-rules-hint view 1) ;display stripes
     (gtk-tree-selection-set-mode (gtk-tree-view-get-selection view) :multiple)
     ;invisible columns
     (gtk-tree-view-column-set-visible (gtk-tree-view-get-column view COL-ID) nil)
-    (gtk-tree-view-column-set-visible (gtk-tree-view-get-column view COL-Q) nil)
+    ;(gtk-tree-view-column-set-visible (gtk-tree-view-get-column view COL-Q) nil)
     view))
 
 

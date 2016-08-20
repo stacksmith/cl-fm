@@ -12,6 +12,7 @@
   :serial t
   :components ((:file "package")
 	       (:file "xattr")
+	       (:file "model")
 	       (:file "filebox")
                (:file "cl-fm")
 ))
