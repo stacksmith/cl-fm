@@ -96,7 +96,9 @@
     (gtk-tree-selection-set-mode (gtk-tree-view-get-selection view) :multiple)
     ;invisible columns
     (gtk-tree-view-column-set-visible (gtk-tree-view-get-column view COL-ID) nil)
-    ;(gtk-tree-view-column-set-visible (gtk-tree-view-get-column view COL-Q) nil)
+;;(gtk-tree-view-column-set-visible (gtk-tree-view-get-column view COL-Q) nil)
+    (gtk-tree-view-enable-grid-lines view )
+;    (gtk-tree-view-set-attributes )
     view))
 
 
