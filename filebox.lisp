@@ -11,15 +11,6 @@
 	(format stream "~4,'0d-~2,'0d-~2,'0d" yr mon day))
       (format stream "")))
 
-
-(defconstant COL-ID 0)
-(defconstant COL-NAME 1)
-(defconstant COL-SIZE 2)
-(defconstant COL-DATE 3)
-(defconstant COL-Q 4)
-
-
-
 #|(defun fentry-path (fentry directory)
   "convert fentry name into full path"
   (merge-pathnames directory (fentry-name fentry)))
@@ -38,37 +29,21 @@
 	   (make-gdk-color :red 00000 :green 35000 :blue 0)))
 
 (defparameter *color-black* (make-gdk-color :red 0 :green 0 :blue 0) )
+
 (defun q-color (q) ;TODO: range-check q
   (if (= q #XF) *color-black*
-      (elt *color-q* q ))
-  )
-					;
-;; TODO: perhaps optimize file access for length date and q?
-;; TODO: gtk-list-store-set is buggy... See if it can be rewritten?
-(defun data-postprocess (fb)
-  (model-postprocess (filebox-store fb) (filebox-path fb))
-)
+      (elt *color-q* q )))
+
+
 
 (defstruct filebox widget store path)
+  
    
-   #|"secondary pass - get sizes etc"
-   (loop for fe across (filebox-data fb) do
-   (let
-   ((path (fentry-path fe (filebox-path fb)))) ;build full filepath ;
-   (unless (cl-fad:directory-exists-p path ) ;exlude directories
-   (setf (fentry-size fe)  (with-open-file (in path) (file-length in))
-   (fentry-mod fe) (file-write-date path)
-   (fentry-q fe) (q-get path)
-   (fentry-q fe) (q-get path))
-					;(format t "[~A ~A ~A]~%" (fentry-q fe) (q-get path) path ) ; ; ;
-   )))
-   |#
-
    
 
 (defun fb-refill (fb)
   "clear gtk store and reload store with data from filesystem"
-  (model-refill (filebox-store fb) (filebox-path fb)  ) )
+)
 ;;------------------------------------------------------------------------------
 ;; custom routines - called by renderer
 ;;
@@ -136,9 +111,8 @@
 
 (defun filebox-reload (fb)
   "reload all data"
-  (fb-refill fb)
-  (data-postprocess fb)
-  ;(fb-refill fb)
+  (model-refill (filebox-store fb) (filebox-path fb)  ) 
+  (model-postprocess (filebox-store fb) (filebox-path fb))
   )
 (defun create-filebox (path)
   (let ((fb (make-filebox :path path
@@ -149,11 +123,11 @@
     (setf (filebox-widget fb)
 	  (create-filebox-widget (filebox-store fb))) 
 	  
-   
-    
+    ;; wiring
     (g-signal-connect
      (filebox-widget fb) "key-press-event"
      (lambda (tv eventkey)
+       (declare (ignore tv))
        (format t "PRESS: [~X ~A]~%" (gdk-event-key-keyval eventkey) (gdk-event-key-keyval eventkey))
        (let ((keyval (gdk-event-key-keyval eventkey)))
 	 (cond
@@ -181,7 +155,7 @@
 	      (path (merge-pathnames (filebox-path fb)
 				     (gtk-tree-model-get-value model iter COL-NAME))))
 					;(format t "ITER ~A ~%" path )
-	 (xxx path)
+	
 	 ;TODO: figure out application
 	 (external-program:start "vlc" (list path))
 	 ;; selected
