@@ -45,7 +45,7 @@
 ;;
 (defun custom-id (column renderer model iterator)
   "id column custom render data function"
-  (declare (ignore column))
+  (declare (ignore column model iterator))
 ;  (format t "~A ~%" 	  (gtk-tree-model-get model iterator 1 ))
   (setf (gtk-cell-renderer-text-background-gdk renderer)
 	(make-gdk-color :red 65000 :green 0 :blue 0) ) )
@@ -84,7 +84,100 @@
  |#
  )
 
+;; drag and drop support
+;; drag-data-get (GtkWidget signal) for sourcing data during dnd
+;;----------------
 
+(defun on-drag-data-get (widget context data info time)
+  (format t "DRAG-DATA-GET ~A~%" info)
+  (format t "Drag1: ~A~%" (gtk-drag-dest-find-target widget context))
+ ; (gtk-selection-data-set-uris data (list "file:///media/stacksmith/INTERNAL/downloads/GTK_dragndrop-1.pdf")) 
+					;  (format t "~A~%" (type-of data))
+					;(format t "ON-DRAG-DATA-GET~%~A~%~A from set~% " data)
+					;  (format t "AAA ~%")
+;					 (gtk-selection-data-set-text data "FUCK" )
+
+
+ (let ((target (gtk-selection-data-target data))
+	(uri "file:///media/stacksmith/INTERNAL/downloads/GTK_dragndrop-1.pdf"))
+    (setf (gtk-selection-data-type data) target )
+    (setf (gtk-selection-data-format data) 8)
+    (setf (gtk-selection-data-data data) (cffi:foreign-string-alloc uri))
+    (setf (gtk-selection-data-length data) (length uri)))
+ ; (format t "TARGET ~A~%" data)
+
+)  
+					;
+  
+					;
+  
+  
+
+  
+  
+					;  (format t "setting uris: ~A~%"	  (gtk-selection-data-set-uris data  (list "file:///media/stacksmith/INTERNAL/downloads/GTK_dragndrop-1.pdf")))
+					;  (cffi:lisp-string-to-foreign "aaaabbbb                           " (gtk-selection-data-get-data data)  66)
+					;(format t "~A~%" data)
+					;(format t "~A~%" (gtk-selection-data-get-data data))
+					;  (format t "~A~%" (cffi:foreign-string-to-lisp (gtk-selection-data-get-data data) :count 66))
+  
+					;(format t "----~A----~%~%" (gtk-selection-data-get-uris data))
+					;  (format t "~A~%" data)
+					;(format t "BBB~%")
+  
+					;  (format t "~A~%" data)
+					;  (format t "~A~%~%"	    (gtk-selection-data-get-uris data ))
+					;  (format t "~%~%~%" )
+					;  data
+
+  #|(define-g-flags "GdkDragAction" gdk-drag-action
+  (:export t
+  :type-initializer "gdk_drag_action_get_type")
+  (:default 1)
+  (:copy 2)
+  (:move 4)
+  (:link 8)
+  (:private 16)
+  (:ask 32))
+
+  (define-g-flags "GtkTargetFlags" gtk-target-flags
+  (:export t
+  :type-initializer "gtk_target_flags_get_type")
+  (:same-app 1)
+  (:same-widget 2)
+  (:other-app 4)
+  (:other-widget 8))
+
+  |#
+
+(defun on-drag-data-received (widget context x y data info time )
+  (format t "DRAG-DATA-RECEIVED~%")
+					;  (format t " ~A ~A ~A ~A ~A ~A ~A~%" widget context x y data info etime)
+					;  (format t "~A~%~%"  (cffi:convert-from-foreign (gtk-selection-data-get-data selection) :string ))
+					;  (format t "~A~%" (cffi:foreign-string-to-lisp (gtk-selection-data-get-data data) :count 66))
+  
+  (format t "----~A----~%~%" data)
+  (format t "----~A----~%~%" (gtk-selection-data-get-uris data))
+;  (format t "----~A----~%~%" (gdk-atom-intern "text/uri-list" t))
+ ; (gtk-drag-finish context t nil time)
+					;  (format t "++++~A~%" (cffi:foreign-string-to-lisp (gtk-selection-data-get-data data) :offset 0 :count (gtk-selection-data-get-length data)))
+;  (gtk-selection-convert widget data "text/uri-list" etime)
+  )
+(defun on-drag-motion (widget context x y time)
+  (format t "DRAG-MOTION ~A (~A,~A)~%" widget x y)
+  (gdk-drag-status context :copy time )
+					;  (gtk-drag-get-data widget context  "text/uri-list"  time)
+;  (format t "~A~%" (type-of (gdk-drag-get-selection context)))
+  t)
+
+(defun on-drag-drop (widget context x y time)
+  (format t "DRAG-DROP ~A (~A,~A)~%" widget x y)
+;  (format t "~A~%"  (gtk-drag-get-data widget context  (gtk-drag-dest-find-target widget context) time ))
+;  (gtk-drag-finish context t nil time)
+  nil)
+
+(defun on-drag-end (widget context )
+  (format t "DRAG-END ~A~%" context))
 
 (defun create-filebox-widget (model)
   "create gtk widget"
@@ -98,13 +191,38 @@
     (gtk-tree-view-column-set-visible (gtk-tree-view-get-column view COL-ID) nil)
 ;;(gtk-tree-view-column-set-visible (gtk-tree-view-get-column view COL-Q) nil)
     (gtk-tree-view-enable-grid-lines view )
-;    (gtk-tree-view-set-attributes )
-    view))
+    (gtk-tree-view-set-reorderable view nil)
+					;    (gtk-tree-view-set-attributes )
+					;    (gtk-drag-dest-add-uri-targets view)
+    (let ((targets (vector
+		   ; (gtk-target-entry-new "text/html" 0 112)
+		   ; (gtk-target-entry-new "text/uri-list" 0 115)
+		   ; (gtk-target-entry-new "GTK_TREE_MODEL_ROW" 0 110);putting this on top makes default work
+		   
+		   ; (gtk-target-entry-new "TEXT" 0 113)
+		   ; (gtk-target-entry-new "STRING" 0 114)
+		    )
+		    ))
+      (gtk-tree-view-enable-model-drag-dest view targets '(:copy :move :link :private :ask)) ;:private :ask
+      (gtk-tree-view-enable-model-drag-source view :button1-mask targets '(:copy :move :link :private :ask ))
+      ;(gtk-drag-dest-set view '(:motion :highlight ) targets '(:copy :move :link :private :ask) )			 
+      ;(gtk-drag-source-set view :button1-mask targets '(:copy :move :link :private :ask)) 
 
+      ;;DRAG
+      ;(g-signal-connect view "drag-data-get" #'on-drag-data-get)
+      ;(g-signal-connect view "drag-end" #'on-drag-end)
+      (g-signal-connect view "drag-motion" #'on-drag-motion)
+      ;;DROP
+      (g-signal-connect view "drag-data-received" #'on-drag-data-received)
+      (g-signal-connect view "drag-drop" #'on-drag-drop)
+      
+      )
+    
+    view))
 
 (defun filebox-reload (fb)
   "reload all data"
-  (model-refill (filebox-store fb) (filebox-path fb)  ) 
+  (model-refill (filebox-store fb) (filebox-path fb) :include-dirs t  ) 
   (model-postprocess (filebox-store fb) (filebox-path fb))
   )
 (defun create-filebox (path)
@@ -113,7 +231,7 @@
     (setf (filebox-widget fb)
 	  (create-filebox-widget (filebox-store fb))) 
 
-    (model-init (filebox-store fb))
+;    (model-init (filebox-store fb))
     ;; wiring
     (g-signal-connect
      (filebox-widget fb) "key-press-event"
@@ -142,7 +260,7 @@
     ;; Double-click
     (g-signal-connect
      (filebox-widget fb) "row-activated"
-     (lambda (tv path column)
+     (lambda (tv path column )
        (format t "~A ~A ~A  ~%" tv path column)
        (let* ((model (gtk-tree-view-get-model tv))
 	      (iter (gtk-tree-model-get-iter model path))
@@ -156,7 +274,7 @@
 	 ;; selected
 ;	 (gtk-tree-selection-selected-foreach sel (lambda (mod path iter) (format t "MULT SEL ~A~%" (gtk-tree-model-get-value mod iter COL-ID))))
 	 )))
-     (filebox-reload fb)
+     (filebox-reload fb) ;initial load
     fb)
   )
 

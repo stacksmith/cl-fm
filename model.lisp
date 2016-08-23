@@ -33,33 +33,39 @@
 	(create-column COL-DIR "DIR" :custom #'custom-id)))
 
 (defun create-model ()
-  (make-instance 'gtk-tree-store
-		                 ;; ID        NAME       SIZE    DATE    Q      DIR
-		 :column-types '("guint" "gchararray" "gint64" "guint" "guint" "guint")))
+  (let ((model
+	 (make-instance 'gtk-tree-store
+			              ;;; ID        NAME       SIZE    DATE    Q      DIR
+			:column-types '("guint" "gchararray" "gint64" "guint" "guint" "guint"))))
+    (g-signal-connect model "row-deleted" #'on-row-deleted)
+    (g-signal-connect model "row-inserted" #'on-row-inserted)
+    (g-signal-connect model "row-changed" #'on-row-changed)
+    model))
 
-(defun model-refill (store path)
+(defun model-refill (store path &key (include-dirs t))
   "clear gtk store and reload store with data from filesystem"
   (gtk-tree-store-clear store)
   ;; First load directories, then files...
   (let ((i 1))
-    (loop for file-name in (cl-fad:list-directory path)
-       do
-	 (when (cl-fad:directory-pathname-p file-name)
-	     (gtk-tree-store-set store (gtk-tree-store-append store nil)
-				 i          ;ID
-				 (file-namestring (string-right-trim "/" (namestring file-name) )) ;NAME
-				 -1         ;SIZE
-				 0          ;DATE
-				 #xf        ;Q
-				 1
-				 )
-	     (incf i)))
+    (if include-dirs
+	(loop for file-name in (cl-fad:list-directory path)
+	   do
+	     (when (cl-fad:directory-pathname-p file-name)
+	       (gtk-tree-store-set store (gtk-tree-store-append store nil)
+				   i          ;ID
+				   (file-namestring (string-right-trim "/" (namestring file-name) )) ;NAME
+				   -1         ;SIZE
+				   0          ;DATE
+				   #xf        ;Q
+				   1
+				   )
+	       (incf i))))
     (loop for file-name in (cl-fad:list-directory path)
        do
 	 (unless (cl-fad:directory-pathname-p file-name)
 	   (gtk-tree-store-set store (gtk-tree-store-append store nil)
 			       i          ;ID
-			       (file-namestring (string-right-trim "/" (namestring file-name) )) ;NAME
+			       (file-namestring  (namestring file-name) ) ;NAME
 			       -1         ;SIZE
 			       0          ;DATE
 			       #xf        ;Q
@@ -102,12 +108,14 @@
 				   (gtk-tree-model-get-value model iterator COL-NAME))))
     (q-set value pathname))
   (gtk-list-store-set-value model iterator COL-Q value)
-  (gtk-tree-model-row-changed model path iterator ))
+;  (gtk-tree-model-row-changed model path iterator )
+  )
+(defun on-row-changed (model tp iter)
+  (format t "~A ROW-CHANGED ~A~%" (get-universal-time) (first (gtk-tree-model-get model iter COL-ID))))
+(defun on-row-inserted (model tp iter)
+  (format t "~A ROW-INSERTED ~A~%" (get-universal-time) (first (gtk-tree-model-get model iter COL-ID))))
+(defun on-row-deleted (model tp)
+  (format t "~A ROW-DELETED ~A~%" (get-universal-time) tp ))
 
 
-(defun model-row-changed (model tp iter)
-  (format t "~A ROW-CHANGED ~A~%" (get-universal-time) (first (gtk-tree-model-get model iter COL-ID)
-							      )))
 
-(defun model-init (model)
-  (g-signal-connect model "row-changed" #'model-row-changed))
