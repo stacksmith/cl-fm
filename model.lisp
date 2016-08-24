@@ -26,7 +26,8 @@
 (defun create-columns ()
   ;; Create columns
   (list (create-column COL-ID "#" :align 1.0 :custom #'custom-id)
-	(create-column COL-NAME "Filename" :custom #'custom-name :expand t)
+	(create-column COL-NAME "Filename"; :custom #'custom-name :expand t
+		       )
 	(create-column COL-SIZE "Size" :align 1.0 :custom #'custom-size)
 	(create-column COL-DATE "Mod" :custom #'custom-date)
 	(create-column COL-Q    "Q" )

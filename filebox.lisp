@@ -39,7 +39,7 @@
 
 (defstruct filebox widget store path)
   
-
+(defparameter *dragged-onto* nil)
 ;;------------------------------------------------------------------------------
 ;; custom routines - called by renderer
 ;;
@@ -52,7 +52,7 @@
 
 (defun custom-name (column renderer model iterator)
   (declare (ignore column))
-  
+  (if (= 3 (gtk-tree-model-get-path model iterator)) (format t "BINGO~%") nil)
   (setf (gtk-cell-renderer-text-foreground-gdk renderer)
 	(q-color (first (gtk-tree-model-get model iterator COL-Q)))))
 
@@ -163,18 +163,54 @@
 					;  (format t "++++~A~%" (cffi:foreign-string-to-lisp (gtk-selection-data-get-data data) :offset 0 :count (gtk-selection-data-get-length data)))
 ;  (gtk-selection-convert widget data "text/uri-list" etime)
   )
+
+ #|   
+	  
+      
+		       0;(if isdir :COPY 0)
+		       time)
+      (format t "TPATH ~A POS ~A [~A]~%" path pos isdir)
+      )
+|#
+(defun on-drag-failed (widget context result)
+  (setf *dragged-onto* nil)
+  (format t "DRAG FAILED~%"))
+(defun on-drag-begin (widget context)
+  (setf *dragged-onto* nil)
+  (format t "DRAG BEGIN~%"))
+
 (defun on-drag-motion (widget context x y time)
+  "return T if status set, nil if drop not permitted"
   (format t "DRAG-MOTION ~A (~A,~A)~%" widget x y)
-  (gdk-drag-status context :copy time )
+  (multiple-value-bind (path pos) (gtk-tree-view-get-dest-row-at-pos widget x y)
+    (let*((model (gtk-tree-view-get-model widget))
+	  (iter (gtk-tree-model-get-iter model path))
+	  (isdir (= 1 (gtk-tree-model-get-value model iter COL-DIR)))
+	  (id (gtk-tree-model-get-value model iter COL-ID)))
+      (setf *dragged-onto* id); for workaround, track destination id
+      ;allow drop into directries only
+      (if isdir 
+	  (progn
+	    (gtk-tree-view-set-drag-dest-row widget path :into-or-after)
+	    (gdk-drag-status context :COPY time)
+	    t) ;t means drop allowed
+	  nil) ;nil means drop disallowed
+      )))
+;  (gdk-drag-status context :copy time )
 					;  (gtk-drag-get-data widget context  "text/uri-list"  time)
 ;  (format t "~A~%" (type-of (gdk-drag-get-selection context)))
-  t)
+
+      
 
 (defun on-drag-drop (widget context x y time)
   (format t "DRAG-DROP ~A (~A,~A)~%" widget x y)
+  (gtk-drag-finish context t nil time )
+  (multiple-value-bind (tpath pos) (gtk-tree-view-get-dest-row-at-pos widget x y)
+    )
+  
 ;  (format t "~A~%"  (gtk-drag-get-data widget context  (gtk-drag-dest-find-target widget context) time ))
 ;  (gtk-drag-finish context t nil time)
-  nil)
+)
 
 (defun on-drag-end (widget context )
   (format t "DRAG-END ~A~%" context))
@@ -195,27 +231,31 @@
 					;    (gtk-tree-view-set-attributes )
 					;    (gtk-drag-dest-add-uri-targets view)
     (let ((targets (vector
-		   ; (gtk-target-entry-new "text/html" 0 112)
-		   ; (gtk-target-entry-new "text/uri-list" 0 115)
-		   ; (gtk-target-entry-new "GTK_TREE_MODEL_ROW" 0 110);putting this on top makes default work
+					; (gtk-target-entry-new "text/html" 0 112)
+		    (gtk-target-entry-new "text/uri-list" 0 115)
+		    ;(gtk-target-entry-new "GTK_TREE_MODEL_ROW" 0 110) ;putting this on top makes default work
 		   
-		   ; (gtk-target-entry-new "TEXT" 0 113)
-		   ; (gtk-target-entry-new "STRING" 0 114)
+					; (gtk-target-entry-new "TEXT" 0 113)
+					; (gtk-target-entry-new "STRING" 0 114)
 		    )
-		    ))
-      (gtk-tree-view-enable-model-drag-dest view targets '(:copy :move :link :private :ask)) ;:private :ask
-      (gtk-tree-view-enable-model-drag-source view :button1-mask targets '(:copy :move :link :private :ask ))
-      ;(gtk-drag-dest-set view '(:motion :highlight ) targets '(:copy :move :link :private :ask) )			 
-      ;(gtk-drag-source-set view :button1-mask targets '(:copy :move :link :private :ask)) 
+	    ))
+     ;(gtk-tree-view-enable-model-drag-dest view targets '(:copy :move :link :private :ask)) ;:private :ask
+     ;(gtk-tree-view-enable-model-drag-source view :button1-mask targets '(:copy :move :link :private :ask ))
+      (gtk-drag-dest-set view 0 targets '(:copy :move :link :private :ask))			 
+      (gtk-drag-source-set view :button1-mask targets '(:copy :move :link :private :ask)) 
 
+      
       ;;DRAG
-      ;(g-signal-connect view "drag-data-get" #'on-drag-data-get)
-      ;(g-signal-connect view "drag-end" #'on-drag-end)
-      (g-signal-connect view "drag-motion" #'on-drag-motion)
-      ;;DROP
+					;(g-signal-connect view "drag-data-get" #'on-drag-data-get)
+      (g-signal-connect view "drag-begin" #'on-drag-begin)
       (g-signal-connect view "drag-data-received" #'on-drag-data-received)
       (g-signal-connect view "drag-drop" #'on-drag-drop)
-      
+      (g-signal-connect view "drag-end"    #'on-drag-end)
+      (g-signal-connect view "drag-failed" #'on-drag-failed)
+      (g-signal-connect view "drag-motion" #'on-drag-motion)
+     
+      ;;DROP
+         
       )
     
     view))
