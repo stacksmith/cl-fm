@@ -201,10 +201,26 @@ static void multidrag_make_row_pixmaps(GtkTreeModel attribute((unused)) *model,
   (let*((model (gtk-tree-view-get-model widget))
 	(selection (gtk-tree-view-get-selection widget))
 	(selected (gtk-tree-selection-get-selected-rows selection ))
-	(icon (gtk-tree-view-create-row-drag-icon widget (second selected)))
-	(pixbuf (gdk-pixbuf-new-from-file "/home/stacksmith/2016/lisp/logo.png")))
-					;(gtk-drag-source-set-icon-gicon widget icon)
+	
+;	(icon (gtk-tree-view-create-row-drag-icon widget (first selected)))
+	(pixbuf (gdk-pixbuf-new-from-file "/home/stacksmith/2016/lisp/doc1.png"))
+	(pp nil))
     (gtk-drag-source-set-icon-pixbuf widget pixbuf)
+    ;; Draw a cairo surface, then convert to pixbuf
+#|    (let* ((surface (cairo-image-surface-create :argb32 160 160))
+	   (cr (cairo-create surface))) 
+      (cairo-move-to cr 0 0)
+      (cairo-set-line-width cr 3.0)
+      (cairo-set-source-rgba  cr 0.0 0.0 1.0 1.0)
+      (cairo-line-to cr 150 150)
+      (cairo-stroke cr)
+      (cairo-destroy cr)
+      (setf pp (gdk-pixbuf-get-from-surface surface 0 0 53 33) )
+      (gtk-drag-source-set-icon-pixbuf widget pp)
+      (cairo-surface-destroy surface))
+  |#
+
+;;    
     ;(format t "~A~%" icon)
     ))
 
