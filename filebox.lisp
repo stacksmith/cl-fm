@@ -19,10 +19,11 @@
 
 (defparameter *color-q*
   (vector
+   (gdk-color-parse "#FFFFFF") ;0 is uses as no q   
    (gdk-color-parse "#DDFFDB")
-   (gdk-color-parse "#EFFFD9")
-   (gdk-color-parse "#FFAAD6")
-   (gdk-color-parse "#FFE3D3")
+   (gdk-color-parse "#E5F3DA")
+   (gdk-color-parse "#EEE8D9")
+   (gdk-color-parse "#F6DCD8")
    (gdk-color-parse "#FFD1D8")
    
  ;;  (gdk-color-parse "#B2FFAD")
@@ -37,8 +38,8 @@
 ;;	  (gdk-color-parse "#FDBA93")
 ;;	  (gdk-color-parse "#FD91A1")
 
-	  (gdk-color-parse "#FFFFFF")
-	  (gdk-color-parse "#FFFFFF")
+
+   (gdk-color-parse "#FFFFFF")
 	  (gdk-color-parse "#FFFFFF")
 
 	  (gdk-color-parse "#FFFFFF")
@@ -86,14 +87,16 @@
 	(make-gdk-color :red 65000 :green 0 :blue 0) ) )
 
 (defun custom-name (column renderer model iterator)
-  (declare (ignore column))
-  ;(if (= 3 (gtk-tree-model-get-path model iterator)) (format t "BINGO~%") nil)
-  (setf (gtk-cell-renderer-text-background-gdk renderer)
-	(q-color (gtk-tree-model-get-value model iterator COL-Q))))
+  (declare (ignore column renderer model iterator))
+
+)
 
 (defun custom-size (column renderer model iterator)
   (declare (ignore column))
-  (let ((size (first (gtk-tree-model-get model iterator COL-SIZE))))
+  (let ((size  (gtk-tree-model-get-value model iterator COL-SIZE))
+	(q (gtk-tree-model-get-value model iterator COL-Q)))
+    (setf (gtk-cell-renderer-text-background-gdk renderer)
+	  (q-color q))
     (if (> size 0)
 	(setf (gtk-cell-renderer-text-text renderer)
 	      (with-output-to-string (str) (format str "~:d" size))))))
@@ -236,11 +239,10 @@ static void multidrag_make_row_pixmaps(GtkTreeModel attribute((unused)) *model,
   (let*((model (gtk-tree-view-get-model widget))
 	(selection (gtk-tree-view-get-selection widget))
 	(selected (gtk-tree-selection-get-selected-rows selection ))
-	
-;	(icon (gtk-tree-view-create-row-drag-icon widget (first selected)))
-	(pixbuf (gdk-pixbuf-new-from-file "/home/stacksmith/2016/lisp/doc1.png"))
-	(pp nil))
+	(pixbuf (gdk-pixbuf-new-from-file (namestring (asdf:system-relative-pathname
+						       'cl-fm "resources/icon-docs.png")))))
     (gtk-drag-source-set-icon-pixbuf widget pixbuf)
+    (format t "~A~%" selected)
     ;; Draw a cairo surface, then convert to pixbuf
 #|    (let* ((surface (cairo-image-surface-create :argb32 160 160))
 	   (cr (cairo-create surface))) 
