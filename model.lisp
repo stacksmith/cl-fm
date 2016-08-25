@@ -26,7 +26,7 @@
 (defun create-columns ()
   ;; Create columns
   (list (create-column COL-ID "#" :align 1.0 :custom #'custom-id)
-	(create-column COL-NAME "Filename"; :custom #'custom-name :expand t
+	(create-column COL-NAME "Filename" :custom #'custom-name :expand t
 		       )
 	(create-column COL-SIZE "Size" :align 1.0 :custom #'custom-size)
 	(create-column COL-DATE "Mod" :custom #'custom-date)
@@ -108,7 +108,7 @@
   (let ((pathname (merge-pathnames directory
 				   (gtk-tree-model-get-value model iterator COL-NAME))))
     (q-set value pathname))
-  (gtk-list-store-set-value model iterator COL-Q value)
+  (gtk-tree-store-set-value model iterator COL-Q value)
 ;  (gtk-tree-model-row-changed model path iterator )
   )
 (defun on-row-changed (model tp iter)

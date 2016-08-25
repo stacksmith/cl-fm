@@ -18,22 +18,57 @@
 |#
 
 (defparameter *color-q*
-  (vector  (make-gdk-color :red 35000 :green 00000 :blue 0) 
-	   (make-gdk-color :red 30000 :green 00000 :blue 0) 
-	   (make-gdk-color :red 25000 :green 00000 :blue 0) 
-	   (make-gdk-color :red 20000 :green 05000 :blue 0) 
-	   (make-gdk-color :red 15000 :green 10000 :blue 0) 
-	   (make-gdk-color :red 10000 :green 15000 :blue 0) 
-	   (make-gdk-color :red 05000 :green 20000 :blue 0) 
-	   (make-gdk-color :red 00000 :green 25000 :blue 0) 
-	   (make-gdk-color :red 00000 :green 30000 :blue 0) 
-	   (make-gdk-color :red 00000 :green 35000 :blue 0)))
+  (vector
+   (gdk-color-parse "#DDFFDB")
+   (gdk-color-parse "#EFFFD9")
+   (gdk-color-parse "#FFAAD6")
+   (gdk-color-parse "#FFE3D3")
+   (gdk-color-parse "#FFD1D8")
+   
+ ;;  (gdk-color-parse "#B2FFAD")
+ ;;  (gdk-color-parse "#DCFFAB")
+ ;;  (gdk-color-parse "#FFF6AA")
+ ;;  (gdk-color-parse "#FFC9A9")
+ ;;  (gdk-color-parse "#FFA8B4")
+   
+   ;;(gdk-color-parse "#A1FD9B")
+;;	  (gdk-color-parse "#D3FD98")
+;;	  (gdk-color-parse "#FDF296")
+;;	  (gdk-color-parse "#FDBA93")
+;;	  (gdk-color-parse "#FD91A1")
 
+	  (gdk-color-parse "#FFFFFF")
+	  (gdk-color-parse "#FFFFFF")
+	  (gdk-color-parse "#FFFFFF")
+
+	  (gdk-color-parse "#FFFFFF")
+	  (gdk-color-parse "#FFFFFF")
+	  (gdk-color-parse "#FFFFFF")
+	  (gdk-color-parse "#FFFFFF")
+
+	  (gdk-color-parse "#FFFFFF")
+	  (gdk-color-parse "#FFFFFF")
+	  (gdk-color-parse "#FFFFFF")
+	  (gdk-color-parse "#FFFFFF")  ))
+#|
+(make-gdk-color :red 35000 :green 00000 :blue 0) 
+(make-gdk-color :red 35000 :green 00000 :blue 0) 
+(make-gdk-color :red 30000 :green 00000 :blue 0) 
+(make-gdk-color :red 25000 :green 00000 :blue 0) 
+(make-gdk-color :red 20000 :green 05000 :blue 0) 
+(make-gdk-color :red 15000 :green 10000 :blue 0) 
+(make-gdk-color :red 10000 :green 15000 :blue 0) 
+(make-gdk-color :red 05000 :green 20000 :blue 0) 
+(make-gdk-color :red 00000 :green 25000 :blue 0) 
+(make-gdk-color :red 00000 :green 30000 :blue 0) 
+(make-gdk-color :red 00000 :green 35000 :blue 0)
+|#
 (defparameter *color-black* (make-gdk-color :red 0 :green 0 :blue 0) )
+(defparameter *color-white* (gdk-color-parse "#FFFFFF"))
 
 (defun q-color (q) ;TODO: range-check q
-  (if (= q #XF) *color-black*
-      (elt *color-q* q )))
+  (if (= q #XF) *color-white*
+      (elt *color-q*  q )))
 
 
 
@@ -52,9 +87,9 @@
 
 (defun custom-name (column renderer model iterator)
   (declare (ignore column))
-  (if (= 3 (gtk-tree-model-get-path model iterator)) (format t "BINGO~%") nil)
-  (setf (gtk-cell-renderer-text-foreground-gdk renderer)
-	(q-color (first (gtk-tree-model-get model iterator COL-Q)))))
+  ;(if (= 3 (gtk-tree-model-get-path model iterator)) (format t "BINGO~%") nil)
+  (setf (gtk-cell-renderer-text-background-gdk renderer)
+	(q-color (gtk-tree-model-get-value model iterator COL-Q))))
 
 (defun custom-size (column renderer model iterator)
   (declare (ignore column))
@@ -243,27 +278,19 @@ static void multidrag_make_row_pixmaps(GtkTreeModel attribute((unused)) *model,
 (defun on-drag-motion (widget context x y time)
   "return T if status set, nil if drop not permitted"
   (format t "DRAG-MOTION ~A (~A,~A)~%" widget x y)
+  (let*((path (gtk-tree-view-get-dest-row-at-pos widget x y)) ;not interested in pos
+	(model (gtk-tree-view-get-model widget))
+	(iter (gtk-tree-model-get-iter model path))
+	(isdir (= 1 (gtk-tree-model-get-value model iter COL-DIR))))
+    ;;allow drop into directries only, and then :into-or-after ignoring pos.
+    (when isdir ;t means drop allowed, otherwise nil 
+      (gtk-tree-view-set-drag-dest-row widget path :into-or-after)
+      ;; UNIMPLEMENTED in cl-cffi-gtk: dgk-drag-context-get-suggested-action
+      (gdk-drag-status context (gdk-drag-context-get-suggested-action context) time)
+          ;; for workaround, track destination id
+      (setf *dragged-onto* (gtk-tree-model-get-value model iter COL-ID))
+      t))) 
 
-  (multiple-value-bind (path pos) (gtk-tree-view-get-dest-row-at-pos widget x y)
-    (let*((model (gtk-tree-view-get-model widget))
-	  (iter (gtk-tree-model-get-iter model path))
-	  (isdir (= 1 (gtk-tree-model-get-value model iter COL-DIR)))
-	  (id (gtk-tree-model-get-value model iter COL-ID))
-	  (icon (gtk-tree-view-create-row-drag-icon widget path)))
-;      (format t "(~A )~%" (cairo-xlib-surface-get-width icon))
-      (setf *dragged-onto* id); for workaround, track destination id
-      ;;allow drop into directries only
-
-      (if isdir 
-	  (progn
-	    (gtk-tree-view-set-drag-dest-row widget path :into-or-after)
-	    (gdk-drag-status context :COPY time)
-	    t) ;t means drop allowed
-	  nil) ;nil means drop disallowed
-	      )))
-;  (gdk-drag-status context :copy time )
-					;  (gtk-drag-get-data widget context  "text/uri-list"  time)
-;  (format t "~A~%" (type-of (gdk-drag-get-selection context)))
 
       
 
@@ -349,10 +376,10 @@ static void multidrag_make_row_pixmaps(GtkTreeModel attribute((unused)) *model,
 	   ((eql keyval GTK-KEY-F3)
 	    (foreach-selected-file fb (lambda (filename) (format t "~A~%" filename))) )
 	   ((eql keyval GTK-KEY-F5) (format t "OK~%")  (filebox-reload fb) )
+	   ;; range between 0 and 9
 	   ((and (>= keyval #x30)
 		 (<= keyval #x39))
 	    (format t "0~%")
-	   
 	    (foreach-selected-file
 	     fb
 	     (lambda (model path iterator)
