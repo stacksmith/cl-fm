@@ -87,6 +87,23 @@
 ;; drag and drop support
 ;; drag-data-get (GtkWidget signal) for sourcing data during dnd
 ;;----------------
+#|
+static void multidrag_make_row_pixmaps(GtkTreeModel attribute((unused)) *model,
+				       GtkTreePath *path,
+				       GtkTreeIter *iter,
+				       gpointer data) {
+  struct multidrag_begin_state *qdbs = data;
+
+  if(qdbs->predicate(path, iter)) {
+    qdbs->pixmaps[qdbs->index++]
+      = gtk_tree_view_create_row_drag_icon(qdbs->view, path);
+  }
+}
+|#
+(defun make-pixmap ()
+)
+
+
 
 (defun on-drag-data-get (widget context data info time)
   (format t "DRAG-DATA-GET ~A~%" info)
@@ -172,30 +189,62 @@
       (format t "TPATH ~A POS ~A [~A]~%" path pos isdir)
       )
 |#
+(defun make-row-icons ()
+  )
 (defun on-drag-failed (widget context result)
   (setf *dragged-onto* nil)
   (format t "DRAG FAILED~%"))
+
 (defun on-drag-begin (widget context)
+  (format t "DRAG BEGIN~%")
   (setf *dragged-onto* nil)
-  (format t "DRAG BEGIN~%"))
+  (let*((model (gtk-tree-view-get-model widget))
+	(selection (gtk-tree-view-get-selection widget))
+	(selected (gtk-tree-selection-get-selected-rows selection ))
+	(icon (gtk-tree-view-create-row-drag-icon widget (second selected)))
+	(pixbuf (gdk-pixbuf-new-from-file "/home/stacksmith/2016/lisp/logo.png")))
+					;(gtk-drag-source-set-icon-gicon widget icon)
+    (gtk-drag-source-set-icon-pixbuf widget pixbuf)
+    ;(format t "~A~%" icon)
+    ))
+
+					;	(format t "~A~%" (first selected))
+;      (format t "(~A )~%" (cairo-xlib-surface-get-width icon))
+   
+      ;;allow drop into directries only
+
+     ;nil means drop disallowed
+     
+;
+ ;; (let (
+					;(gtk_tree_view_create_row_drag_icon )
+;    
+
+  
+
+
 
 (defun on-drag-motion (widget context x y time)
   "return T if status set, nil if drop not permitted"
   (format t "DRAG-MOTION ~A (~A,~A)~%" widget x y)
+
   (multiple-value-bind (path pos) (gtk-tree-view-get-dest-row-at-pos widget x y)
     (let*((model (gtk-tree-view-get-model widget))
 	  (iter (gtk-tree-model-get-iter model path))
 	  (isdir (= 1 (gtk-tree-model-get-value model iter COL-DIR)))
-	  (id (gtk-tree-model-get-value model iter COL-ID)))
+	  (id (gtk-tree-model-get-value model iter COL-ID))
+	  (icon (gtk-tree-view-create-row-drag-icon widget path)))
+;      (format t "(~A )~%" (cairo-xlib-surface-get-width icon))
       (setf *dragged-onto* id); for workaround, track destination id
-      ;allow drop into directries only
+      ;;allow drop into directries only
+
       (if isdir 
 	  (progn
 	    (gtk-tree-view-set-drag-dest-row widget path :into-or-after)
 	    (gdk-drag-status context :COPY time)
 	    t) ;t means drop allowed
 	  nil) ;nil means drop disallowed
-      )))
+	      )))
 ;  (gdk-drag-status context :copy time )
 					;  (gtk-drag-get-data widget context  "text/uri-list"  time)
 ;  (format t "~A~%" (type-of (gdk-drag-get-selection context)))
@@ -228,6 +277,7 @@
 ;;(gtk-tree-view-column-set-visible (gtk-tree-view-get-column view COL-Q) nil)
     (gtk-tree-view-enable-grid-lines view )
     (gtk-tree-view-set-reorderable view nil)
+    
 					;    (gtk-tree-view-set-attributes )
 					;    (gtk-drag-dest-add-uri-targets view)
     (let ((targets (vector
