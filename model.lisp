@@ -120,3 +120,8 @@
 
 
 
+(defun fad-test (path)
+  (loop for file-path in (cl-fad:list-directory path)
+     do (format t "~a~%" file-path)
+       (with-open-file (stream file-path)
+	 (format t "~a~%" (read-line stream)))))

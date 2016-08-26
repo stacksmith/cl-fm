@@ -142,25 +142,56 @@ static void multidrag_make_row_pixmaps(GtkTreeModel attribute((unused)) *model,
 (defparameter *click-x* 0)
 (defparameter *click-y* 0)
 
+(defparameter *dragged-p* nil)
+(defparameter *clicked-on* nil)
 (defun on-button-press (widget event)
+  (setf *dragged-p* nil)
+  (format t "BUTTON-PRESS ~A ~%" (gdk-event-button-state event) )
   (let* ((x (round (gdk-event-button-x event)))
 	 (y (round  (gdk-event-button-y event)))
 	 (path (gtk-tree-view-get-path-at-pos widget x y))
-	 (sel (gtk-tree-view-get-selection widget)))
+	 (sel (gtk-tree-view-get-selection widget))
+	 (model (gtk-tree-view-get-model widget))
+	 (iter (gtk-tree-model-get-iter model path)))
+    (setf *clicked-on* (gtk-tree-model-get-value model iter COL-ID))
+   (format t "CLICKED-ON ~A~%" *clicked-on*)
+    ;; complicated... see http://ewx.livejournal.com/532369.html
+    ;; - normally, allow modifications to the tree selection;
+    ;; - if clicked on a selected row, disallow selection modification for multidrag
     (gtk-tree-selection-set-select-function sel (lambda (sel model path selp) t)) ;unblock selection
+    ;;
     (and (= 1 (gdk-event-button-button event)) ;left button
 	 ;(= 0 (gdk-event-button-state event)) ;no modifiers
 	 path
 	 (gtk-tree-selection-path-is-selected sel path) ;clicked on a selected row
-	 (progn (format t "BUTTON-PRESS (~A ~A) ~A ~%" x y (gdk-event-button-state event)) t)
+	; (progn (format t "BUTTON-PRESS (~A ~A) ~A ~%" x y (gdk-event-button-state event)) t)
 	 (progn ; disable selection
-	   (gtk-tree-selection-set-select-function sel (lambda (sel model path selp) nil)))
-	 t))
+	   (gtk-tree-selection-set-select-function sel (lambda (sel model path selp) nil))
+	   t))))
 
-  
- 
-  
-)
+(defun on-button-release (widget event)
+   (format t "BUTTON-RELEASE ~A ~%" (gdk-event-button-state event) )
+  (let* ((x (round (gdk-event-button-x event)))
+	 (y (round  (gdk-event-button-y event)))
+	 (path (gtk-tree-view-get-path-at-pos widget x y))
+	 (sel (gtk-tree-view-get-selection widget))
+	 (model (gtk-tree-view-get-model widget))
+	 (iter (gtk-tree-model-get-iter model path))
+	 (released-on (gtk-tree-model-get-value model iter COL-ID)))
+     (format t "RELEASED-ON ~A~%" released-on)  
+ ;   (gtk-tree-selection-set-select-function sel (lambda (sel model path selp) t)) ;unblock selection
+    (and sel
+	 (not *dragged-p*)
+	 (logand 4 (gdk-event-button-state event))
+	 (= *clicked-on* released-on)
+	 (gtk-tree-selection-path-is-selected sel path)
+	 (progn (gtk-tree-selection-unselect-path sel path)
+		(format t "AAA~%")
+		t)
+	)
+    ;;
+    )
+  (setf *dragged-p* nil))
 
 (defun on-drag-data-get (widget context data info time)
   (format t "DRAG-DATA-GET ~A~%" info)
@@ -251,6 +282,7 @@ static void multidrag_make_row_pixmaps(GtkTreeModel attribute((unused)) *model,
   (format t "DRAG FAILED~%"))
 
 (defun on-drag-begin (widget context)
+  (setf *dragged-p* t)
   (format t "DRAG BEGIN~%")
   (setf *dragged-onto* nil)
   (let*((model (gtk-tree-view-get-model widget))
@@ -358,6 +390,7 @@ static void multidrag_make_row_pixmaps(GtkTreeModel attribute((unused)) *model,
 
 
       (g-signal-connect view "button-press-event" #'on-button-press)
+      (g-signal-connect view "button-release-event" #'on-button-release)
       ;;DRAG
 					;(g-signal-connect view "drag-data-get" #'on-drag-data-get)
       (g-signal-connect view "drag-begin" #'on-drag-begin)
@@ -420,9 +453,8 @@ static void multidrag_make_row_pixmaps(GtkTreeModel attribute((unused)) *model,
 	      ;(sel (gtk-tree-view-get-selection tv))
 	      (path (merge-pathnames (filebox-path fb)
 				     (gtk-tree-model-get-value model iter COL-NAME))))
-					;(format t "ITER ~A ~%" path )
-	
-	 ;TODO: figure out application
+					;	 (format t "ITER ~A ~%" path )
+					;TODO: figure out application
 	 (external-program:start "vlc" (list path))
 	 ;; selected
 ;	 (gtk-tree-selection-selected-foreach sel (lambda (mod path iter) (format t "MULT SEL ~A~%" (gtk-tree-model-get-value mod iter COL-ID))))
