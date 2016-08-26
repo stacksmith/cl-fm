@@ -138,10 +138,29 @@ static void multidrag_make_row_pixmaps(GtkTreeModel attribute((unused)) *model,
   }
 }
 |#
-(defun make-pixmap ()
+
+(defparameter *click-x* 0)
+(defparameter *click-y* 0)
+
+(defun on-button-press (widget event)
+  (let* ((x (round (gdk-event-button-x event)))
+	 (y (round  (gdk-event-button-y event)))
+	 (path (gtk-tree-view-get-path-at-pos widget x y))
+	 (sel (gtk-tree-view-get-selection widget)))
+    (gtk-tree-selection-set-select-function sel (lambda (sel model path selp) t)) ;unblock selection
+    (and (= 1 (gdk-event-button-button event)) ;left button
+	 ;(= 0 (gdk-event-button-state event)) ;no modifiers
+	 path
+	 (gtk-tree-selection-path-is-selected sel path) ;clicked on a selected row
+	 (progn (format t "BUTTON-PRESS (~A ~A) ~A ~%" x y (gdk-event-button-state event)) t)
+	 (progn ; disable selection
+	   (gtk-tree-selection-set-select-function sel (lambda (sel model path selp) nil)))
+	 t))
+
+  
+ 
+  
 )
-
-
 
 (defun on-drag-data-get (widget context data info time)
   (format t "DRAG-DATA-GET ~A~%" info)
@@ -227,8 +246,6 @@ static void multidrag_make_row_pixmaps(GtkTreeModel attribute((unused)) *model,
       (format t "TPATH ~A POS ~A [~A]~%" path pos isdir)
       )
 |#
-(defun make-row-icons ()
-  )
 (defun on-drag-failed (widget context result)
   (setf *dragged-onto* nil)
   (format t "DRAG FAILED~%"))
@@ -339,7 +356,8 @@ static void multidrag_make_row_pixmaps(GtkTreeModel attribute((unused)) *model,
       (gtk-drag-dest-set view 0 targets '(:copy :move :link :private :ask))			 
       (gtk-drag-source-set view :button1-mask targets '(:copy :move :link :private :ask)) 
 
-      
+
+      (g-signal-connect view "button-press-event" #'on-button-press)
       ;;DRAG
 					;(g-signal-connect view "drag-data-get" #'on-drag-data-get)
       (g-signal-connect view "drag-begin" #'on-drag-begin)
@@ -372,7 +390,7 @@ static void multidrag_make_row_pixmaps(GtkTreeModel attribute((unused)) *model,
      (filebox-widget fb) "key-press-event"
      (lambda (tv eventkey)
        (declare (ignore tv))
-       (format t "PRESS: [~X ~A]~%" (gdk-event-key-keyval eventkey) (gdk-event-key-keyval eventkey))
+       (format t "KEYPRESS: [~X ~A]~%" (gdk-event-key-keyval eventkey) (gdk-event-key-keyval eventkey))
        (let ((keyval (gdk-event-key-keyval eventkey)))
 	 (cond
 	   ((eql keyval GTK-KEY-F3)
