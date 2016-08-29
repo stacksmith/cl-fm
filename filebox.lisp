@@ -195,6 +195,7 @@ static void multidrag_make_row_pixmaps(GtkTreeModel attribute((unused)) *model,
   t)
 
 (defun on-drag-data-get (widget context data info time)
+  ;;; NEVER HAPPENS HERE
   (format t "DRAG-DATA-GET ~A~%" info)
   (format t "Drag1: ~A~%" (gtk-drag-dest-find-target widget context))
  ; (gtk-selection-data-set-uris data (list "file:///media/stacksmith/INTERNAL/downloads/GTK_dragndrop-1.pdf")) 
@@ -284,19 +285,20 @@ static void multidrag_make_row_pixmaps(GtkTreeModel attribute((unused)) *model,
 
 (defun on-drag-begin (widget context)
   (setf *dragged-p* t)
-  (format t "DRAG BEGIN~%")
+  (format t "DRAG BEGIN. DRAG ALLOWED: ~A~%" *drag-allowed*)
   (setf *dragged-onto* nil)
   
   (let*((model (gtk-tree-view-get-model widget))
 	;;(selection (gtk-tree-view-get-selection widget))
 	;;(selected (gtk-tree-selection-get-selected-rows selection ))
-	(pixbuf (gdk-pixbuf-new-from-file (namestring (asdf:system-relative-pathname
-						       'cl-fm "resources/icon-docs.png")))))
+)
     (if *drag-allowed*
-	(gtk-drag-source-set-icon-pixbuf widget pixbuf)
-	(gtk-drag-cancel ))
+	(gtk-drag-source-set-icon-pixbuf widget *pix-docs*)
+	(gtk-drag-source-set-icon-pixbuf widget *pix-bad*)
+	;(gtk-drag-cancel )
+	)
     
-    (format t "~A~%" selected)
+;    (format t "~A~%" selected)
     ;; Draw a cairo surface, then convert to pixbuf
 #|    (let* ((surface (cairo-image-surface-create :argb32 160 160))
 	   (cr (cairo-create surface))) 
@@ -339,7 +341,8 @@ static void multidrag_make_row_pixmaps(GtkTreeModel attribute((unused)) *model,
 	(iter (gtk-tree-model-get-iter model path))
 	(isdir (= 1 (gtk-tree-model-get-value model iter COL-DIR))))
     ;;allow drop into directries only, and then :into-or-after ignoring pos.
-    (when isdir ;t means drop allowed, otherwise nil 
+    (when isdir ;t means drop allowed, otherwise nil
+      (format t "DIR: drop allowed~%")
       (gtk-tree-view-set-drag-dest-row widget path :into-or-after)
       ;; UNIMPLEMENTED in cl-cffi-gtk: dgk-drag-context-get-suggested-action
       (gdk-drag-status context (gdk-drag-context-get-suggested-action context) time)
@@ -354,6 +357,7 @@ static void multidrag_make_row_pixmaps(GtkTreeModel attribute((unused)) *model,
   (format t "DRAG-DROP ~A (~A,~A)~%" widget x y)
   (gtk-drag-finish context t nil time )
   (multiple-value-bind (tpath pos) (gtk-tree-view-get-dest-row-at-pos widget x y)
+    ()
     )
   
 ;  (format t "~A~%"  (gtk-drag-get-data widget context  (gtk-drag-dest-find-target widget context) time ))
@@ -400,6 +404,7 @@ static void multidrag_make_row_pixmaps(GtkTreeModel attribute((unused)) *model,
 					;(g-signal-connect view "drag-data-get" #'on-drag-data-get)
       (g-signal-connect view "drag-begin" #'on-drag-begin)
       (g-signal-connect view "drag-data-received" #'on-drag-data-received)
+      (g-signal-connect view "drag-data-get" #'on-drag-data-get)      
       (g-signal-connect view "drag-drop" #'on-drag-drop)
       (g-signal-connect view "drag-end"    #'on-drag-end)
       (g-signal-connect view "drag-failed" #'on-drag-failed)

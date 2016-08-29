@@ -13,6 +13,7 @@
   :components ((:file "package")
 	       (:file "xattr")
 	       (:file "model")
+	       (:file "drag-and-drop")
 	       (:file "filebox")
                (:file "cl-fm")
 ))
