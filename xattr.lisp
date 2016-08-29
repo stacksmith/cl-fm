@@ -12,7 +12,7 @@
 ;; BUG the first access seems to return success/0 sometimes?
 (defun q-get (path)
   "retreive q attr given a path or a string"
-  (let ((v nil))
+  (let ((v 0))
     (with-foreign-pointer (buf 257)
       (with-foreign-object (size :int)
 	(setf (mem-aref size :int) -1)
@@ -31,7 +31,7 @@
 		(setf v (- (mem-aref buf :char) 48)))
 	      (progn
 		;(format t "~A FAILED SIZE ~A~%" path (mem-aref size :int) )
-		(setf v 15))))))
+		)))))
         v))
 ;;TODO: fix to smaller buffer
 (defun q-set (value path)

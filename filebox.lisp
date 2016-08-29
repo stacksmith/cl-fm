@@ -142,8 +142,11 @@ static void multidrag_make_row_pixmaps(GtkTreeModel attribute((unused)) *model,
 (defparameter *click-x* 0)
 (defparameter *click-y* 0)
 
+(defparameter *drag-allowed* nil)
 (defparameter *dragged-p* nil)
 (defparameter *clicked-on* nil)
+
+
 (defun on-button-press (widget event)
   (setf *dragged-p* nil)
   (format t "BUTTON-PRESS ~A ~%" (gdk-event-button-state event) )
@@ -154,20 +157,14 @@ static void multidrag_make_row_pixmaps(GtkTreeModel attribute((unused)) *model,
 	 (model (gtk-tree-view-get-model widget))
 	 (iter (gtk-tree-model-get-iter model path)))
     (setf *clicked-on* (gtk-tree-model-get-value model iter COL-ID))
-   (format t "CLICKED-ON ~A~%" *clicked-on*)
-    ;; complicated... see http://ewx.livejournal.com/532369.html
-    ;; - normally, allow modifications to the tree selection;
-    ;; - if clicked on a selected row, disallow selection modification for multidrag
-    (gtk-tree-selection-set-select-function sel (lambda (sel model path selp) t)) ;unblock selection
-    ;;
-    (and (= 1 (gdk-event-button-button event)) ;left button
-	 ;(= 0 (gdk-event-button-state event)) ;no modifiers
-	 path
-	 (gtk-tree-selection-path-is-selected sel path) ;clicked on a selected row
-	; (progn (format t "BUTTON-PRESS (~A ~A) ~A ~%" x y (gdk-event-button-state event)) t)
-	 (progn ; disable selection
-	   (gtk-tree-selection-set-select-function sel (lambda (sel model path selp) nil))
-	   t))))
+					;(gtk-tree-view-set-cursor widget path)
+    (gtk-tree-selection-set-select-function sel (lambda (sel model path selp)
+						  (declare (ignore sel model path selp))
+						  nil)) ;disallow selection!
+    ;; dragging is enabled if clicked on a selection
+    (setf *drag-allowed* (gtk-tree-selection-path-is-selected sel path))
+    )
+  t)
 
 (defun on-button-release (widget event)
    (format t "BUTTON-RELEASE ~A ~%" (gdk-event-button-state event) )
@@ -179,19 +176,23 @@ static void multidrag_make_row_pixmaps(GtkTreeModel attribute((unused)) *model,
 	 (iter (gtk-tree-model-get-iter model path))
 	 (released-on (gtk-tree-model-get-value model iter COL-ID)))
      (format t "RELEASED-ON ~A~%" released-on)  
- ;   (gtk-tree-selection-set-select-function sel (lambda (sel model path selp) t)) ;unblock selection
-    (and sel
-	 (not *dragged-p*)
-	 (logand 4 (gdk-event-button-state event))
-	 (= *clicked-on* released-on)
-	 (gtk-tree-selection-path-is-selected sel path)
-	 (progn (gtk-tree-selection-unselect-path sel path)
-		(format t "AAA~%")
-		t)
-	)
-    ;;
-    )
-  (setf *dragged-p* nil))
+     (gtk-tree-selection-set-select-function sel (lambda (sel model path selp) t)) ;unblock selection
+     (let ((state (logand 15 (gdk-event-button-state event)))) ;bit 8 is 1 for release
+       (if (not *dragged-p*)
+	   (case state
+	     (0 ; no modifiers
+	      (gtk-tree-selection-unselect-all sel)
+	      (gtk-tree-selection-select-path sel path))
+	     (1 ; shift
+	      (format t "AAA~%")
+	      (gtk-tree-selection-select-range sel path (first (gtk-tree-selection-get-selected-rows sel))))
+	     (4 ; control
+	      (if (gtk-tree-selection-path-is-selected sel path) 
+		  (gtk-tree-selection-unselect-path sel path) ;if selected, unselect
+		  (gtk-tree-selection-select-path sel path)) ;if unselected, select
+	      )))))
+  (setf *dragged-p* nil)
+  t)
 
 (defun on-drag-data-get (widget context data info time)
   (format t "DRAG-DATA-GET ~A~%" info)
@@ -285,12 +286,16 @@ static void multidrag_make_row_pixmaps(GtkTreeModel attribute((unused)) *model,
   (setf *dragged-p* t)
   (format t "DRAG BEGIN~%")
   (setf *dragged-onto* nil)
+  
   (let*((model (gtk-tree-view-get-model widget))
-	(selection (gtk-tree-view-get-selection widget))
-	(selected (gtk-tree-selection-get-selected-rows selection ))
+	;;(selection (gtk-tree-view-get-selection widget))
+	;;(selected (gtk-tree-selection-get-selected-rows selection ))
 	(pixbuf (gdk-pixbuf-new-from-file (namestring (asdf:system-relative-pathname
 						       'cl-fm "resources/icon-docs.png")))))
-    (gtk-drag-source-set-icon-pixbuf widget pixbuf)
+    (if *drag-allowed*
+	(gtk-drag-source-set-icon-pixbuf widget pixbuf)
+	(gtk-drag-cancel ))
+    
     (format t "~A~%" selected)
     ;; Draw a cairo surface, then convert to pixbuf
 #|    (let* ((surface (cairo-image-surface-create :argb32 160 160))
@@ -371,7 +376,7 @@ static void multidrag_make_row_pixmaps(GtkTreeModel attribute((unused)) *model,
 ;;(gtk-tree-view-column-set-visible (gtk-tree-view-get-column view COL-Q) nil)
     (gtk-tree-view-enable-grid-lines view )
     (gtk-tree-view-set-reorderable view nil)
-    
+    (setf (gtk-widget-can-focus view) t)
 					;    (gtk-tree-view-set-attributes )
 					;    (gtk-drag-dest-add-uri-targets view)
     (let ((targets (vector
@@ -399,9 +404,10 @@ static void multidrag_make_row_pixmaps(GtkTreeModel attribute((unused)) *model,
       (g-signal-connect view "drag-end"    #'on-drag-end)
       (g-signal-connect view "drag-failed" #'on-drag-failed)
       (g-signal-connect view "drag-motion" #'on-drag-motion)
-     
       ;;DROP
-         
+
+      (g-signal-connect view "changed" (lambda (sel) (format t "SEL CHANGED ~A~%" sel)) )
+      
       )
     
     view))
