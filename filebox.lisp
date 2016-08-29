@@ -1,7 +1,5 @@
 (in-package :cl-fm)
 ;; filebox - a widget containing a list of files
-(defconstant GTK-KEY-F3 #XFFC0)
-(defconstant GTK-KEY-F5 #XFFC2)
 
 (defun print-date (stream date)
   "Given a universal time date, outputs to a stream."
@@ -145,39 +143,75 @@
   "reload all data"
   (model-refill (filebox-store fb) (filebox-path fb) :include-dirs t  ) 
   (model-postprocess (filebox-store fb) (filebox-path fb))
+  (format t "KEYPRESS: [~X ~A]~%" (gdk-event-key-keyval eventkey) (gdk-event-key-keyval eventkey))
+  
   )
+
+;;; Keyboard
+;;;
+;;; Due to a bug(?) https://github.com/crategus/cl-cffi-gtk/issues/46, modifier keys
+;;; are turned into a list of keywords indicating modifiers, instead of a bitmask.
+;;; So I am turning them back into a bitmask, pending a fix.
+
+(defconstant GTK-KEY-F3 #XFFC0)
+(defconstant GTK-KEY-F5 #XFFC2)
+(defconstant GTK-KEY-SHIFT #XFFE1)
+(defconstant GTK-KEY-CONTROL #XFFE3)
+(defconstant GTK-KEY-META #XFFE9)
+
+(defconstant MOD-SHIFT-MASK   (ash 1 0))
+(defconstant MOD-CONTROL-MASK (ash 1 2))
+(defconstant MOD-META-MASK    (ash 1 28))
+
+(let ((modifier 0)) 
+
+  (defun on-key-release (widget event)
+    (let ((keyval (gdk-event-key-keyval event)))
+      (cond
+	((eql keyval GTK-KEY-SHIFT)
+	 (setf modifier (logand modifier (lognot MOD-SHIFT-MASK))))
+	((eql keyval GTK-KEY-CONTROL)
+	 (setf modifier (logand modifier (lognot MOD-CONTROL-MASK))))
+	((eql keyval GTK-KEY-META)
+	 (setf modifier (logand modifier (lognot MOD-META-MASK))))
+	)
+      (format t "KEY-RELEASE MOD ~X~%" modifier))  
+    )
+  (defun on-key-press (widget event)
+    (let ((keyval (gdk-event-key-keyval event)))
+      (format t "KEY-PRESS ~X~%" keyval)
+      (cond
+	((eql keyval GTK-KEY-SHIFT)   (setf modifier (logior modifier MOD-SHIFT-MASK)))
+	((eql keyval GTK-KEY-CONTROL) (setf modifier (logior modifier MOD-CONTROL-MASK)))
+	((eql keyval GTK-KEY-META)    (setf modifier (logior modifier MOD-META-MASK)))
+	 
+	((eql keyval GTK-KEY-F3)
+					;(foreach-selected-file fb (lambda (filename) (format t "~A~%" filename)))
+	 )
+	((eql keyval GTK-KEY-F5) (format t "OK~%")
+					;(filebox-reload fb)
+	 )
+	;; range between 0 and 9
+	((and (>= keyval #x30)
+	      (<= keyval #x39))
+	 (format t "0~%")
+					;       (foreach-selected-file fb (lambda (model path iterator) (model-set-q model path iterator (filebox-path fb) (- keyval #x30))))
+	 )))
+    (format t "KEY-PRESS MOD ~X~%" modifier)
+    nil
+    ))
+  
+
 (defun create-filebox (path)
   (let ((fb (make-filebox :path path
 			  :store (create-model))))
     (setf (filebox-widget fb)
 	  (create-filebox-widget (filebox-store fb))) 
 
-;    (model-init (filebox-store fb))
+					;    (model-init (filebox-store fb))
     ;; wiring
-    (g-signal-connect
-     (filebox-widget fb) "key-press-event"
-     (lambda (tv eventkey)
-       (declare (ignore tv))
-       (format t "KEYPRESS: [~X ~A]~%" (gdk-event-key-keyval eventkey) (gdk-event-key-keyval eventkey))
-       (let ((keyval (gdk-event-key-keyval eventkey)))
-	 (cond
-	   ((eql keyval GTK-KEY-F3)
-	    (foreach-selected-file fb (lambda (filename) (format t "~A~%" filename))) )
-	   ((eql keyval GTK-KEY-F5) (format t "OK~%")  (filebox-reload fb) )
-	   ;; range between 0 and 9
-	   ((and (>= keyval #x30)
-		 (<= keyval #x39))
-	    (format t "0~%")
-	    (foreach-selected-file
-	     fb
-	     (lambda (model path iterator)
-	       (model-set-q model path iterator (filebox-path fb) (- keyval #x30))))
-					;(filebox-reload fb)
-	    )
-	   (t (format t "NOPE")))
-	 )
-       t ;do not propagate
-       ))
+    (g-signal-connect (filebox-widget fb) "key-press-event" 'on-key-press)
+    (g-signal-connect (filebox-widget fb) "key-release-event" 'on-key-release)
     ;; Double-click
     (g-signal-connect
      (filebox-widget fb) "row-activated"
@@ -185,19 +219,20 @@
        (format t "~A ~A ~A  ~%" tv path column)
        (let* ((model (gtk-tree-view-get-model tv))
 	      (iter (gtk-tree-model-get-iter model path))
-	      ;(sel (gtk-tree-view-get-selection tv))
+					;(sel (gtk-tree-view-get-selection tv))
 	      (path (merge-pathnames (filebox-path fb)
 				     (gtk-tree-model-get-value model iter COL-NAME))))
 					;	 (format t "ITER ~A ~%" path )
 					;TODO: figure out application
 	 (external-program:start "vlc" (list path))
 	 ;; selected
-;	 (gtk-tree-selection-selected-foreach sel (lambda (mod path iter) (format t "MULT SEL ~A~%" (gtk-tree-model-get-value mod iter COL-ID))))
+					;	 (gtk-tree-selection-selected-foreach sel (lambda (mod path iter) (format t "MULT SEL ~A~%" (gtk-tree-model-get-value mod iter COL-ID))))
 	 )))
-     (filebox-reload fb) ;initial load
+    (filebox-reload fb) ;initial load
     fb)
   )
 
 
 
-;-----------------------
+					;-----------------------
+  
