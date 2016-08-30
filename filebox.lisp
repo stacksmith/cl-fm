@@ -148,75 +148,7 @@
  
   )
 
-;;; Keyboard
-;;;
-;;; Due to a bug(?) https://github.com/crategus/cl-cffi-gtk/issues/46, modifier keys
-;;; are turned into a list of keywords indicating modifiers, instead of a bitmask.
-;;; So I am turning them back into a bitmask, pending a fix.
 
-(defconstant GTK-KEY-F3 #XFFC0)
-(defconstant GTK-KEY-F5 #XFFC2)
-(defconstant GTK-KEY-SHIFT #XFFE1)
-(defconstant GTK-KEY-CONTROL #XFFE3)
-(defconstant GTK-KEY-META #XFFE9)
-
-(defconstant MOD-SHIFT-MASK   (ash 1 0))
-(defconstant MOD-CONTROL-MASK (ash 1 2))
-(defconstant MOD-META-MASK    (ash 1 28))
-
-
-
-(let ((modifier 0)) 
-
-  (defun add-modifiers (keyval)
-    "if keyval is a modifier key, update modifier bitmap and return T"
-    (let ((ret t))
-      (cond
-	((eql keyval GTK-KEY-SHIFT)   (setf modifier (logior modifier MOD-SHIFT-MASK)))
-	((eql keyval GTK-KEY-CONTROL) (setf modifier (logior modifier MOD-CONTROL-MASK)))
-	((eql keyval GTK-KEY-META)    (setf modifier (logior modifier MOD-META-MASK)))
-	(t (setq ret nil)))
-      ret))
-  (defun remove-modifiers (keyval)
-    "if keyval is a modifier key, update modifier bitmap and return T"
-    (let ((ret t))
-      (cond
-	((eql keyval GTK-KEY-SHIFT)
-	 (setf modifier (logand modifier (lognot MOD-SHIFT-MASK))))
-	((eql keyval GTK-KEY-CONTROL)
-	 (setf modifier (logand modifier (lognot MOD-CONTROL-MASK))))
-	((eql keyval GTK-KEY-META)
-	 (setf modifier (logand modifier (lognot MOD-META-MASK))))
-	(t (setq ret nil)))
-      ret))
-
-  
-  (defun on-key-release (widget event)
-    (let ((keyval (gdk-event-key-keyval event)))
-      (remove-modifiers keyval)
-      (format t "KEY-RELEASE MOD ~X~%" modifier)
-      t))
-  
-  (defun on-key-press (widget event)
-    (let ((keyval (gdk-event-key-keyval event)))
-      (format t "KEY-PRESS ~X~%" keyval)
-      (unless (add-modifiers keyval)
-        (cond
-	  ((eql keyval GTK-KEY-F3)
-					;(foreach-selected-file fb (lambda (filename) (format t "~A~%" filename)))
-	   )
-	  ((eql keyval GTK-KEY-F5) (format t "OK~%")
-					;(filebox-reload fb)
-	   )
-	  ;; range between 0 and 9
-	  ((and (>= keyval #x30)
-		(<= keyval #x39))
-	   (format t "0~%")
-					;       (foreach-selected-file fb (lambda (model path iterator) (model-set-q model path iterator (filebox-path fb) (- keyval #x30))))
-	   ))
-    
-	(format t "KEY-PRESS MOD ~X~%" modifier)))
-    t))
 
 (defun create-filebox (path)
   (let ((fb (make-filebox :path path

@@ -14,6 +14,7 @@
 	       (:file "xattr")
 	       (:file "model")
 	       (:file "drag-and-drop")
+	       (:file "keystroke")
 	       (:file "filebox")
                (:file "cl-fm")
 ))
