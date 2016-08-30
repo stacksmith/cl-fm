@@ -135,6 +135,7 @@
     (gtk-tree-view-enable-grid-lines view )
     (gtk-tree-view-set-reorderable view nil)
     (setf (gtk-widget-can-focus view) t)
+    (setf (gtk-tree-view-enable-search view) nil); prevent key eating search box
     (drag-and-drop-setup view) ;see "drag-and-drop.lisp"
     
     view))
@@ -143,8 +144,8 @@
   "reload all data"
   (model-refill (filebox-store fb) (filebox-path fb) :include-dirs t  ) 
   (model-postprocess (filebox-store fb) (filebox-path fb))
-  (format t "KEYPRESS: [~X ~A]~%" (gdk-event-key-keyval eventkey) (gdk-event-key-keyval eventkey))
-  
+  ;
+ 
   )
 
 ;;; Keyboard
@@ -163,10 +164,22 @@
 (defconstant MOD-CONTROL-MASK (ash 1 2))
 (defconstant MOD-META-MASK    (ash 1 28))
 
+
+
 (let ((modifier 0)) 
 
-  (defun on-key-release (widget event)
-    (let ((keyval (gdk-event-key-keyval event)))
+  (defun add-modifiers (keyval)
+    "if keyval is a modifier key, update modifier bitmap and return T"
+    (let ((ret t))
+      (cond
+	((eql keyval GTK-KEY-SHIFT)   (setf modifier (logior modifier MOD-SHIFT-MASK)))
+	((eql keyval GTK-KEY-CONTROL) (setf modifier (logior modifier MOD-CONTROL-MASK)))
+	((eql keyval GTK-KEY-META)    (setf modifier (logior modifier MOD-META-MASK)))
+	(t (setq ret nil)))
+      ret))
+  (defun remove-modifiers (keyval)
+    "if keyval is a modifier key, update modifier bitmap and return T"
+    (let ((ret t))
       (cond
 	((eql keyval GTK-KEY-SHIFT)
 	 (setf modifier (logand modifier (lognot MOD-SHIFT-MASK))))
@@ -174,33 +187,36 @@
 	 (setf modifier (logand modifier (lognot MOD-CONTROL-MASK))))
 	((eql keyval GTK-KEY-META)
 	 (setf modifier (logand modifier (lognot MOD-META-MASK))))
-	)
-      (format t "KEY-RELEASE MOD ~X~%" modifier))  
-    )
+	(t (setq ret nil)))
+      ret))
+
+  
+  (defun on-key-release (widget event)
+    (let ((keyval (gdk-event-key-keyval event)))
+      (remove-modifiers keyval)
+      (format t "KEY-RELEASE MOD ~X~%" modifier)
+      t))
+  
   (defun on-key-press (widget event)
     (let ((keyval (gdk-event-key-keyval event)))
       (format t "KEY-PRESS ~X~%" keyval)
-      (cond
-	((eql keyval GTK-KEY-SHIFT)   (setf modifier (logior modifier MOD-SHIFT-MASK)))
-	((eql keyval GTK-KEY-CONTROL) (setf modifier (logior modifier MOD-CONTROL-MASK)))
-	((eql keyval GTK-KEY-META)    (setf modifier (logior modifier MOD-META-MASK)))
-	 
-	((eql keyval GTK-KEY-F3)
+      (unless (add-modifiers keyval)
+        (cond
+	  ((eql keyval GTK-KEY-F3)
 					;(foreach-selected-file fb (lambda (filename) (format t "~A~%" filename)))
-	 )
-	((eql keyval GTK-KEY-F5) (format t "OK~%")
+	   )
+	  ((eql keyval GTK-KEY-F5) (format t "OK~%")
 					;(filebox-reload fb)
-	 )
-	;; range between 0 and 9
-	((and (>= keyval #x30)
-	      (<= keyval #x39))
-	 (format t "0~%")
+	   )
+	  ;; range between 0 and 9
+	  ((and (>= keyval #x30)
+		(<= keyval #x39))
+	   (format t "0~%")
 					;       (foreach-selected-file fb (lambda (model path iterator) (model-set-q model path iterator (filebox-path fb) (- keyval #x30))))
-	 )))
-    (format t "KEY-PRESS MOD ~X~%" modifier)
-    nil
-    ))
-  
+	   ))
+    
+	(format t "KEY-PRESS MOD ~X~%" modifier)))
+    t))
 
 (defun create-filebox (path)
   (let ((fb (make-filebox :path path
