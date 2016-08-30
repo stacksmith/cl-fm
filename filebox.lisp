@@ -137,7 +137,7 @@
     (setf (gtk-widget-can-focus view) t)
     (setf (gtk-tree-view-enable-search view) nil); prevent key eating search box
     (drag-and-drop-setup view) ;see "drag-and-drop.lisp"
-    
+    (keystroke-setup view) ;see "keystroke.lisp"
     view))
 
 (defun filebox-reload (fb)
@@ -157,10 +157,7 @@
 	  (create-filebox-widget (filebox-store fb))) 
 
 					;    (model-init (filebox-store fb))
-    ;; wiring
-    (g-signal-connect (filebox-widget fb) "key-press-event" 'on-key-press)
-    (g-signal-connect (filebox-widget fb) "key-release-event" 'on-key-release)
-    ;; Double-click
+     ;; Double-click
     (g-signal-connect
      (filebox-widget fb) "row-activated"
      (lambda (tv path column )
