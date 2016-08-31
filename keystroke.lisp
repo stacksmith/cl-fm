@@ -22,49 +22,55 @@
   (:release-mask #.(ash 1 30))
   (:modifier-mask #x5c001fff))
 |#
-(defstruct key
-  keysym shift control meta alt hyper super)
+(defconstant MOD-CONTROL-MASK (ash 1 0))
+(defconstant MOD-META-MASK    (ash 1 1)) 
+(defconstant MOD-ALT-MASK     (ash 1 2)) 
+(defconstant MOD-SHIFT-MASK   (ash 1 3)) 
+(defconstant MOD-SUPER-MASK   (ash 1 4)) 
+(defconstant MOD-HYPER-MASK   (ash 1 5))
+
+
+(defstruct key keysym mod)
 
 (defparameter *modifier-keys* nil
-  "List of modifier keysyms"
+  "List of modifier keysyms" ;initialized in keystroke setup..
  )
 
 (defun keysym-char (keysym)
   (and (< keysym char-code-limit)
        (code-char keysym)))
 
+
+
 (defun print-key (key)
   "Convert a key into a string representation"
-  (concatenate 'string
-               (when (key-control key) "C-")
-               (when (key-meta key) "M-")
-               (when (key-alt key) "A-")
-               (when (key-shift key) "S-")
-               (when (key-super key) "s-")
-               (when (key-hyper key) "H-")
-	       (keysym->keysym-name (key-keysym key))))
+  (let ((mod (key-mod key)))
+    (concatenate 'string
+		 (when (logand mod mod-control-mask)"C-")
+		 (when (logand mod mod-meta-mask)  "M-")
+		 (when (logand mod mod-alt-mask)   "A-")
+		 (when (logand mod mod-shift-mask) "S-")
+		 (when (logand mod mod-super-mask) "s-")
+		 (when (logand mod mod-hyper-mask) "H-")
+		 (keysym->keysym-name (key-keysym key)))))
+
+(defun gtk-modifiers (gtk-modifiers)
+  "scan the gtk-modifier list and create a mod bitmap"
+  (let ((modmap 0))
+    (dolist (modifier gtk-modifiers)
+	(case modifier 
+	  (:control-mask (incf modmap MOD-CONTROL-MASK))
+	  (:mod1-mask    (incf modmap MOD-META-MASK))))
+    modmap))
 
 (defun on-key-press (widget event)
   "Process a key from GTK; return key structure or nil for special keys"
   (declare (ignore widget))
-  (let* ((keysym (gdk-event-key-keyval event)))
-    ;;(format t "~A~%" (keysym->keysym-name keysym))
-    (unless (member keysym *modifier-keys*)
-      (let ((state (gdk-event-key-state event))
-	    (key (make-key :keysym keysym)))
-	(loop for modifier in state do
-	     (case modifier 
-	       (:shift-mask   (setf (key-shift key) t))
-	       (:control-mask (setf (key-control key) t))
-	       (:mod1-mask    (setf (key-meta key) t))))
-	(let ((char (keysym-char keysym))) ;may be nil!
-	  (and char
-	       (key-shift key)
-	       (upper-case-p char)
-	       (setf (key-shift key) nil) 
-	       ))
-	(format t "~A~%" (print-key key)))
-      ))
+  (let ((keysym (gdk-event-key-keyval event)))
+    (unless (member keysym *modifier-keys*) ;skip modifier keypresses
+      (format t "~A~%" 
+	      (print-key  (make-key :keysym keysym :mod (gtk-modifiers (gdk-event-key-state event)))))
+       ))
   
   t)
 
