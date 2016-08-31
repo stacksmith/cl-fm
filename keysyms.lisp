@@ -44,11 +44,9 @@
     value))
 
 (defun keysym->keysym-name (keysym)
-  "Return the name corresponding to KEYSYM."
-  (multiple-value-bind (value present-p)
-      (gethash keysym *keysym-name-translations*)
-    (declare (ignore present-p))
-    value))
+  "Return the name corresponding to KEYSYM or nil"
+  (gethash keysym *keysym-name-translations*))
+
 ;; A quick macro to substitute keysym for name
 (defmacro keysym-of (name)
   "Insert the numeric value of the named keysym"
@@ -60,6 +58,41 @@
 (define-keysym #xff1b "ESC")
 (define-keysym #xff09 "TAB")
 (define-keysym #xff08 "BS")      ;Back space, back char
+(define-keysym #xffff "DEL")         ;Delete, rubout
+(define-keysym #x0020 "SPC")        ;U+0020 SPACE
+(define-keysym #x0021 "!")         ;U+0021 EXCLAMATION MAR
+(define-keysym #x0022 "\"")       ;U+0022 QUOTATION MARK
+(define-keysym #x0023 "#")     ;U+0023 NUMBER SIGN
+(define-keysym #x0024 "$")         ;U+0024 DOLLAR SIGN
+(define-keysym #x0025 "%")        ;U+0025 PERCENT SIGN
+(define-keysym #x0026 "&")      ;U+0026 AMPERSAND
+(define-keysym #x0027 "'")     ;U+0027 APOSTROPHE
+(define-keysym #x0028 "(")      ;U+0028 LEFT PARENTHESIS
+(define-keysym #x0029 ")")     ;U+0029 RIGHT PARENTHESIS
+(define-keysym #x002a "*")       ;U+002A ASTERISK
+(define-keysym #x002b "+")           ;U+002B PLUS SIGN
+(define-keysym #x002c ",")          ;U+002C COMMA
+(define-keysym #x002d "-")          ;U+002D HYPHEN-MINUS
+(define-keysym #x002e ".")         ;U+002E FULL STOP
+(define-keysym #x002f "/")          ;U+002F SOLIDUS
+(define-keysym #x003a ":")          ;U+003A COLON
+(define-keysym #x003b ";")      ;U+003B SEMICOLON
+(define-keysym #x003c "<")           ;U+003C LESS-THAN SIGN
+(define-keysym #x003d "=")          ;U+003D EQUALS SIGN
+(define-keysym #x003e ">")        ;U+003E GREATER-THAN SIGN
+(define-keysym #x003f "?")       ;U+003F QUESTION MARK
+(define-keysym #x0040 "@")             ;U+0040 COMMERCIAL AT
+(define-keysym #x005b "[")    ;U+005B LEFT SQUARE BRACKET
+(define-keysym #x005c "\\")      ;U+005C REVERSE SOLIDUS
+(define-keysym #x005d "]")   ;U+005D RIGHT SQUARE BRACKET
+(define-keysym #x005e "^")    ;U+005E CIRCUMFLEX ACCENT
+(define-keysym #x005f "_")     ;U+005F LOW LINE
+(define-keysym #x0060 "`")          ;U+0060 GRAVE ACCENT
+(define-keysym #x007b "{")      ;U+007B LEFT CURLY BRACKET
+(define-keysym #x007c "|")            ;U+007C VERTICAL LINE
+(define-keysym #x007d "}")     ;U+007D RIGHT CURLY BRACKET
+(define-keysym #x007e "~")     ;U+007E TILDE
+
 
 
 (define-keysym #xffffff "VoidSymbol")   ;Void symbol
@@ -71,7 +104,7 @@
 (define-keysym #xff14 "Scroll_Lock")
 (define-keysym #xff15 "Sys_Req")
 
-(define-keysym #xffff "Delete")         ;Delete, rubout
+
 (define-keysym #xff20 "Multi_key")      ;Multi-key character compose
 (define-keysym #xff37 "Codeinput")
 (define-keysym #xff3c "SingleCandidate")
@@ -340,23 +373,9 @@
 (define-keysym #xfd1c "3270_CursorSelect")
 (define-keysym #xfd1d "3270_PrintScreen")
 (define-keysym #xfd1e "3270_Enter")
-(define-keysym #x0020 "space")          ;U+0020 SPACE
-(define-keysym #x0021 "exclam")         ;U+0021 EXCLAMATION MARK
-(define-keysym #x0022 "quotedbl")       ;U+0022 QUOTATION MARK
-(define-keysym #x0023 "numbersign")     ;U+0023 NUMBER SIGN
-(define-keysym #x0024 "dollar")         ;U+0024 DOLLAR SIGN
-(define-keysym #x0025 "percent")        ;U+0025 PERCENT SIGN
-(define-keysym #x0026 "ampersand")      ;U+0026 AMPERSAND
-(define-keysym #x0027 "apostrophe")     ;U+0027 APOSTROPHE
-(define-keysym #x0027 "quoteright")     ;deprecated
-(define-keysym #x0028 "parenleft")      ;U+0028 LEFT PARENTHESIS
-(define-keysym #x0029 "parenright")     ;U+0029 RIGHT PARENTHESIS
-(define-keysym #x002a "asterisk")       ;U+002A ASTERISK
-(define-keysym #x002b "plus")           ;U+002B PLUS SIGN
-(define-keysym #x002c "comma")          ;U+002C COMMA
-(define-keysym #x002d "minus")          ;U+002D HYPHEN-MINUS
-(define-keysym #x002e "period")         ;U+002E FULL STOP
-(define-keysym #x002f "slash")          ;U+002F SOLIDUS
+
+
+
 (define-keysym #x0030 "0")              ;U+0030 DIGIT ZERO
 (define-keysym #x0031 "1")              ;U+0031 DIGIT ONE
 (define-keysym #x0032 "2")              ;U+0032 DIGIT TWO
@@ -367,13 +386,7 @@
 (define-keysym #x0037 "7")              ;U+0037 DIGIT SEVEN
 (define-keysym #x0038 "8")              ;U+0038 DIGIT EIGHT
 (define-keysym #x0039 "9")              ;U+0039 DIGIT NINE
-(define-keysym #x003a "colon")          ;U+003A COLON
-(define-keysym #x003b "semicolon")      ;U+003B SEMICOLON
-(define-keysym #x003c "less")           ;U+003C LESS-THAN SIGN
-(define-keysym #x003d "equal")          ;U+003D EQUALS SIGN
-(define-keysym #x003e "greater")        ;U+003E GREATER-THAN SIGN
-(define-keysym #x003f "question")       ;U+003F QUESTION MARK
-(define-keysym #x0040 "at")             ;U+0040 COMMERCIAL AT
+
 (define-keysym #x0041 "A")              ;U+0041 LATIN CAPITAL LETTER A
 (define-keysym #x0042 "B")              ;U+0042 LATIN CAPITAL LETTER B
 (define-keysym #x0043 "C")              ;U+0043 LATIN CAPITAL LETTER C
@@ -400,13 +413,6 @@
 (define-keysym #x0058 "X")              ;U+0058 LATIN CAPITAL LETTER X
 (define-keysym #x0059 "Y")              ;U+0059 LATIN CAPITAL LETTER Y
 (define-keysym #x005a "Z")              ;U+005A LATIN CAPITAL LETTER Z
-(define-keysym #x005b "bracketleft")    ;U+005B LEFT SQUARE BRACKET
-(define-keysym #x005c "backslash")      ;U+005C REVERSE SOLIDUS
-(define-keysym #x005d "bracketright")   ;U+005D RIGHT SQUARE BRACKET
-(define-keysym #x005e "asciicircum")    ;U+005E CIRCUMFLEX ACCENT
-(define-keysym #x005f "underscore")     ;U+005F LOW LINE
-(define-keysym #x0060 "grave")          ;U+0060 GRAVE ACCENT
-(define-keysym #x0060 "quoteleft")      ;deprecated
 (define-keysym #x0061 "a")              ;U+0061 LATIN SMALL LETTER A
 (define-keysym #x0062 "b")              ;U+0062 LATIN SMALL LETTER B
 (define-keysym #x0063 "c")              ;U+0063 LATIN SMALL LETTER C
@@ -433,10 +439,6 @@
 (define-keysym #x0078 "x")              ;U+0078 LATIN SMALL LETTER X
 (define-keysym #x0079 "y")              ;U+0079 LATIN SMALL LETTER Y
 (define-keysym #x007a "z")              ;U+007A LATIN SMALL LETTER Z
-(define-keysym #x007b "braceleft")      ;U+007B LEFT CURLY BRACKET
-(define-keysym #x007c "bar")            ;U+007C VERTICAL LINE
-(define-keysym #x007d "braceright")     ;U+007D RIGHT CURLY BRACKET
-(define-keysym #x007e "asciitilde")     ;U+007E TILDE
 (define-keysym #x00a0 "nobreakspace")   ;U+00A0 NO-BREAK SPACE
 (define-keysym #x00a1 "exclamdown")  ;U+00A1 INVERTED EXCLAMATION MARK
 (define-keysym #x00a2 "cent")           ;U+00A2 CENT SIGN

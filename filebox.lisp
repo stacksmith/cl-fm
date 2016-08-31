@@ -119,7 +119,9 @@
     (funcall func model path iterator filepath ))
  |#
  )
- 
+
+(defun on-idle ()
+  ())
 
 (defun create-filebox-widget (model)
   "create gtk widget"
@@ -138,15 +140,18 @@
     (setf (gtk-tree-view-enable-search view) nil); prevent key eating search box
     (drag-and-drop-setup view) ;see "drag-and-drop.lisp"
     (keystroke-setup view) ;see "keystroke.lisp"
+
+    (gdk-threads-add-idle #'(lambda ()
+			   ;   (format t "IDLE..." )
+			   ;   (sleep 10)
+			   ;   (format t "IDLE...>~%" )
+			      nil  ))
     view))
 
 (defun filebox-reload (fb)
   "reload all data"
   (model-refill (filebox-store fb) (filebox-path fb) :include-dirs t  ) 
-  (model-postprocess (filebox-store fb) (filebox-path fb))
-  ;
- 
-  )
+  (model-postprocess (filebox-store fb) (filebox-path fb)))
 
 
 
