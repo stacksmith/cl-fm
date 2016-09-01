@@ -35,7 +35,6 @@
 
 
 ;hashtable mapping gtk key # to cl character code
-(defvar *gtkkey-clcode* (make-hash-table))
 
 (defvar *gtkkey-name-translations* (make-hash-table))
 (defvar *name-gtkkey-translations* (make-hash-table :test #'equal))

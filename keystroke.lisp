@@ -46,7 +46,7 @@
 ;;;
 ;;; We only care about control and meta (alt key).
 ;;; Shift is already processed for us.
-(defun make-key (val &optional (gtk-modifiers nil))
+(defun make-key (val &optional (gtk-modifiers nil)) 
   "create a key using the gtk modifier list"
   (dolist (modifier gtk-modifiers)
     (case modifier 
@@ -54,6 +54,24 @@
       (:mod1-mask    (incf val MOD-META-MASK))))
   val)
 
+(defun str->key (str)
+  "Convert a string representation of a key to a key"
+  (let ((chars (coerce str 'list))
+	(key 0))
+    (loop for (a b) on chars by #'cddr do
+	 (if b
+	     (if (eq #\- b)
+		 (case a
+		   (#\C (incf key mod-control-mask))
+		   (#\M (incf key mod-meta-mask))
+		   (#\A (incf key mod-alt-mask))
+		   (#\S (incf key mod-shift-mask))
+		   (#\s (incf key mod-super-mask))
+		   (#\H (incf key mod-hyper-mask))
+		   (t (signal 'kbd-parse-error :string str))) ;not a modifier
+		 (signal 'kbd-parse-error :string str)); not a -	     
+	     (incf key (char-code a)))) ;last character is set
+    key))
 #|
 (defun str->key (string)
   "Parse string and return a key;. Raise an error of type
