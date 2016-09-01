@@ -28,6 +28,9 @@
 
 (in-package #:cl-fm)
 
+;hashtable mapping gtk key # to cl character code
+(defvar *gtkkey-clcode* (make-hash-table))
+
 (defvar *keysym-name-translations* (make-hash-table))
 (defvar *name-keysym-translations* (make-hash-table :test #'equal))
 
@@ -54,7 +57,7 @@
     `,keysym))
 
 ;;OK, I will rip out X11/GTK keysyms and name them the Emacs way...
-(define-keysym #xff0d "RET")         ;Return, enter
+(define-keysym #xff0d "Return")         ;Return, enter
 (define-keysym #xff1b "ESC")
 (define-keysym #xff09 "TAB")
 (define-keysym #xff08 "BS")      ;Back space, back char
@@ -845,7 +848,7 @@
 (define-keysym #x10006c1 "Arabic_heh_goal") ;U+06C1 ARABIC LETTER HEH GOAL
 (define-keysym #xff7e "Arabic_switch")  ;Alias for mode_switch
 (define-keysym #x1000492 "Cyrillic_GHE_bar") ;U+0492 CYRILLIC CAPITAL LETTER GHE WITH STROKE
-(define-keysym #x1000493 "Cyrillic_ghe_bar") ;U+0493 CYRILLIC SMALL LETTER GHE WITH STROKE
+(define-keysym #x100093 "Cyrillic_ghe_bar") ;U+0493 CYRILLIC SMALL LETTER GHE WITH STROKE
 (define-keysym #x1000496 "Cyrillic_ZHE_descender") ;U+0496 CYRILLIC CAPITAL LETTER ZHE WITH DESCENDER
 (define-keysym #x1000497 "Cyrillic_zhe_descender") ;U+0497 CYRILLIC SMALL LETTER ZHE WITH DESCENDER
 (define-keysym #x100049a "Cyrillic_KA_descender") ;U+049A CYRILLIC CAPITAL LETTER KA WITH DESCENDER
@@ -2106,3 +2109,9 @@
 (define-keysym #x100000AC "usldead_asciitilde")
 (define-keysym #x1000FE2C "usldead_cedilla")
 (define-keysym #x1000FEB0 "usldead_ring")
+
+(defun modifier-p (keysym)
+  "check if the keysym is a modifier (shift, etc)"
+  ;; TODO: these should probably be mapped individually...
+  (and (>= keysym #xffe1)
+       (<= keysym #xffee)))
