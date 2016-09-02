@@ -63,8 +63,9 @@
   (let ((gtkkey (gdk-event-key-keyval event)))
     ;;    (format t "...~A~%" gtkkey)
     (unless (modifier-p gtkkey)	;skip modifier keypresses
-      (format t "~A~%" 
-	      (key-str (make-key gtkkey (gdk-event-key-state event))))))  
+      (format t "~A ~A ~A~%" gtkkey (gdk-event-key-state event)
+	      (key-str (make-key gtkkey (gdk-event-key-state event)))
+	      )))  
   t)
 
 

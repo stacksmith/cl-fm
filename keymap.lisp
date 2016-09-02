@@ -21,8 +21,10 @@
   (let ((old (gethash key map) value))
     (setf (gethash key map) symbol)))
 
-(defun keyname->key (string index remaining)
-  #xFFFFFF)
+(defun keyname->key (string index)
+  (or (gtkkey-of (subseq string index)) ; do
+      (signal 'kbd-parse-error :string string) ; or die
+      ))
 
 ;;; a key-pair is a string 3+ long, with the first character indicating a
 ;;; modifier (CMASHh), second being a -, and rest- a string convertible
@@ -46,7 +48,7 @@
 	     (incf index 2)
 	     (decf remaining 2))
 	   (progn ; not a -, remainder must be convertible to a key
-	     (incf key (keyname->key string index remaining))
+	     (incf key (keyname->key string index))
 	     (incf index remaining) ;done here
 	     (setf remaining 0)))))
   (values string index remaining key))
