@@ -49,7 +49,7 @@
 	     (incf index 2)
 	     (decf remaining 2))
 	   (progn ; not a -, remainder must be convertible to a key
-	     (incf key (keyname->key string index))
+	     (incf key (keyname->gtkkey string index))
 	     (incf index remaining) ;done here
 	     (setf remaining 0)))))
   (values string index remaining key))
@@ -60,10 +60,18 @@
   "parse emacs-command string, returning key"
   (let ((index 0) (remaining (length string)) (key 0))
     (loop while (> remaining 0) do
-	 (format t "~A ~A ~A ~A~%" string index remaining key)
+	 ;(format t "~A ~A ~A ~A~%" string index remaining key)
 	 (multiple-value-setq (string index remaining key)
 	   (parse-key-pair string index remaining key)))
     key))
+
+;;; A command-sequence is a string containing multiple key-tuples, ending with
+;;; a string that represents a function
+(defun parse-command-sequence (string)
+  (let ((items (split-string string)))
+    (loop for item in items
+       while (cdr item) do
+	 (format t "~A~%" item))))
 
 
 (defun bind (string command)
@@ -71,8 +79,7 @@
     (loop while (> remaining 0) do
 	 (format t "~A ~A ~A ~A~%" string index remaining key)
 	 (multiple-value-setq (string index remaining key)
-	   (str->key-prim string index remaining key)))
+	   (parse-key-pair string index remaining key)))
     key)
 
   )
-
