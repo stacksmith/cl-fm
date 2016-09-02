@@ -6,12 +6,13 @@
   :license "MIT"
   :depends-on (#:cl-cffi-gtk      ;gui
                #:cl-fad           ;filenames
+	       #:cl-unicode       ;hopefully makes key names compatible
                #:cl-ppcre         ;fancy searches
 	       #:external-program ;execute external program
 	       )
   :serial t
   :components ((:file "package")
-	       (:file "utils")
+	       (:file "util")
 	       (:file "xattr")
 	       (:file "model")
 	       (:file "drag-and-drop")

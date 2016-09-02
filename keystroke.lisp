@@ -27,9 +27,8 @@
   "return mod flags of key, not settable"
   `(mask-field keymod-spec ,key))
 
-
-
 (defun key-char (key)
+  "return a Lisp character corresponding to this key"
   (and (<  (key-val key) char-code-limit)
        (code-char (key-val key))))
 
@@ -54,38 +53,7 @@
       (:mod1-mask    (incf val MOD-META-MASK))))
   val)
 
-(defun str->key-prim (string index remaining key)
-  "parse emacs-command string at index updating key, returning 4 values"
-  ;; remaining must be >0!
-  (case remaining
-    (1 (incf key (char-code (char string index)));last char is the char
-       (incf index 1)
-       (decf remaining 1)) 
-    (t (if (eq #\- (char string (1+ index))) ; command formed as "?-..."
-	   (progn
-	     (case (char string index) ;dispatch on the letter preceding #\-
-	       (#\C (incf key mod-control-mask))
-	       (#\M (incf key mod-meta-mask))
-	       (#\A (incf key mod-alt-mask))
-	       (#\S (incf key mod-shift-mask))
-	       (#\s (incf key mod-super-mask))
-	       (#\H (incf key mod-hyper-mask))
-	       (t (signal 'kbd-parse-error :string string)))
-	     (incf index 2)
-	     (decf remaining 2))
-	   (signal 'kbd-parse-error :string string)))) ;not a -, malformed
-  (values string index remaining key))
 
-    
-(defun str->key (string)
-  "parse emacs-command string, returning key"
-
-  (let ((index 0) (remaining (length string)) (key 0))
-    (loop while (> remaining 0) do
-	 (format t "~A ~A ~A ~A~%" string index remaining key)
-	 (multiple-value-setq (string index remaining key)
-	   (str->key-prim string index remaining key)))
-    key))
 
  
 
