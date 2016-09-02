@@ -18,11 +18,12 @@
 
 (defun bind-command (map key symbol)
   "bind a key or a string to a function symbol "
-  (let ((old (gethash key map) value))
-    (setf (gethash key map) symbol)))
+  
+  (setf (gethash key map) symbol))
 
-(defun keyname->key (string index)
-  (or (gtkkey-of (subseq string index)) ; do
+(defun keyname->gtkkey (string index)
+  "convert keyname from string at index to gtkkey"
+  (or (gtkkey-name->gtkkey (subseq string index)) ; do
       (signal 'kbd-parse-error :string string) ; or die
       ))
 
