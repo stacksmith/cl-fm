@@ -27,18 +27,19 @@
       (signal 'kbd-parse-error :string string) ; or die
       ))
 
-;;; a key-pair is a string 3+ long, with the first character indicating a
-;;; modifier (CMASHh), second being a -, and rest- a string convertible
-;;; to a key.
-(defun parse-key-pair (string index remaining key)
-  "parse emacs-command string at index updating key, returning 4 values"
-  (case remaining
-    (1 (incf key (char-code (char string index)));last char must be char
-       (incf index 1)
-       (decf remaining 1)) 
-    (t (if (eq #\- (char string (1+ index))) ; command formed as "?-..."
+;;; a sub-command is a part of a command, consisting of one of:
+;;; modifier character (one of CMASHh) followed by a -;
+;;; a string containing a single character, converted into key
+;;; a string containing a character name, converted into key
+;;; The parser returns a subseq after removing whatever it parsed.
+(defun parse-sub-command (string key)
+  "parse emacs-command string at index updating key, returning 2 values"
+  (case (length string)
+    (1 (incf key (char-code (char string 0)));last char must be char
+       (setf string nil)) 
+    (t (if (eq #\- (char string 1)) ; command formed as "?-..."
 	   (progn ; attempt to set modifier
-	     (case (char string index) ;dispatch on the letter preceding #\-
+	     (case (char string 0) ;dispatch on the letter preceding #\-
 	       (#\C (incf key mod-control-mask))
 	       (#\M (incf key mod-meta-mask))
 	       (#\A (incf key mod-alt-mask))
@@ -46,23 +47,21 @@
 	       (#\s (incf key mod-super-mask))
 	       (#\H (incf key mod-hyper-mask))
 	       (t (signal 'kbd-parse-error :string string)))
-	     (incf index 2)
-	     (decf remaining 2))
+	     (setf string (subseq string 2)))
 	   (progn ; not a -, remainder must be convertible to a key
-	     (incf key (keyname->gtkkey string index))
-	     (incf index remaining) ;done here
-	     (setf remaining 0)))))
-  (values string index remaining key))
-;;; A key-tuple is a string containing no spaces corresponding to a keystroke
-;;; with 0 or more modifiers in the form of one of (CMASHh) characters followed
-;;; by a -.  The final element must be found to be a keyname.
-(defun parse-key-tuple (string)
+	     (incf key (keyname->gtkkey string 0))
+	     (setf string nil)))))
+  (values string key))
+
+;;; A command is a keystroke with modifiers represented as a string, containing
+;;; sub-commands.
+(defun parse-command (string)
   "parse emacs-command string, returning key"
-  (let ((index 0) (remaining (length string)) (key 0))
-    (loop while (> remaining 0) do
+  (let ((key 0))
+    (loop while string do
 	 ;(format t "~A ~A ~A ~A~%" string index remaining key)
-	 (multiple-value-setq (string index remaining key)
-	   (parse-key-pair string index remaining key)))
+	 (multiple-value-setq (string key)
+	   (parse-sub-command string key)))
     key))
 
 ;;; A command-sequence is a string containing multiple key-tuples, ending with
@@ -72,7 +71,7 @@
     (loop for item in items
        while (cdr item) do
 	 (format t "~A~%" item))))
-
+ 
 
 (defun bind (string command)
    (let ((index 0) (remaining (length string)) (key 0))
