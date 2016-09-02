@@ -11,10 +11,11 @@
 	       )
   :serial t
   :components ((:file "package")
+	       (:file "utils")
 	       (:file "xattr")
 	       (:file "model")
 	       (:file "drag-and-drop")
-	       (:file "keysyms") ;stumpwm
+	       (:file "keysyms")
 	       (:file "keystroke") 
 	       (:file "filebox")
                (:file "cl-fm")
