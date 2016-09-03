@@ -29,7 +29,7 @@
    *input* (load-flist :wd in  :recurse sub)))
 (defun iselect (&key (regex ".*")))
 
-(defun split-seq (seq separators &key test (default-value '("")))
+(defun split-seq (seq separators &key (test #'char=) (default-value '("")))
   "split a sequence into sub sequences given the list of seperators."
   (let ((seps separators))
     (labels ((sep (c)
@@ -46,5 +46,5 @@
 
 (defun split-string (string &optional (separators " "))
   "Splits STRING into substrings at separator characters, eliminating those"
-  (split-seq string separators :test #'char=))
+  (split-seq string separators))
 
