@@ -242,8 +242,8 @@ static void multidrag_make_row_pixmaps(GtkTreeModel attribute((unused)) *model,
 (defun drag-and-drop-setup (view)
   (gtk-drag-dest-set view 0 *dnd-target-dest* '(:copy :move :link :private :ask))			 
   (gtk-drag-source-set view :button1-mask *dnd-target-src*  '(:copy :move :link :private :ask)) 
-  (g-signal-connect view "button-press-event" #'on-button-press)
-  (g-signal-connect view "button-release-event" #'on-button-release)
+  ;(g-signal-connect view "button-press-event" #'on-button-press)
+  ;(g-signal-connect view "button-release-event" #'on-button-release)
   ;;DRAG
 					;(g-signal-connect view "drag-data-get" #'on-drag-data-get)
   (g-signal-connect view "drag-begin" #'on-drag-begin)

@@ -73,7 +73,7 @@
 
 (defstruct filebox widget store path)
   
-(defparameter *dragged-onto* nil)
+(defparameter *dragged-onto* nil) 
 ;;------------------------------------------------------------------------------
 ;; custom routines - called by renderer
 ;;
@@ -139,7 +139,7 @@
     (setf (gtk-widget-can-focus view) t)
     (setf (gtk-tree-view-enable-search view) nil); prevent key eating search box
     (drag-and-drop-setup view) ;see "drag-and-drop.lisp"
-    (keystroke-setup view) ;see "keystroke.lisp"
+;    (keystroke-setup view) ;see "keystroke.lisp"
 
     (gdk-threads-add-idle #'(lambda ()
 			   ;   (format t "IDLE..." )
@@ -153,7 +153,9 @@
   (model-refill (filebox-store fb) (filebox-path fb) :include-dirs t  ) 
   (model-postprocess (filebox-store fb) (filebox-path fb)))
 
-
+(defun filebox-set-path (fb path)
+  (setf (filebox-path fb) path)
+  (filebox-reload fb))
 
 (defun create-filebox (path)
   (let ((fb (make-filebox :path path
@@ -166,16 +168,23 @@
     (g-signal-connect
      (filebox-widget fb) "row-activated"
      (lambda (tv path column )
-       (format t "~A ~A ~A  ~%" tv path column)
+       (format t "ROW ACTIVATED ~A ~A ~A  ~%" tv path column)
        (let* ((model (gtk-tree-view-get-model tv))
 	      (iter (gtk-tree-model-get-iter model path))
 					;(sel (gtk-tree-view-get-selection tv))
+	      (dir (gtk-tree-model-get-value model iter COL-DIR))
 	      (path (merge-pathnames (filebox-path fb)
-				     (gtk-tree-model-get-value model iter COL-NAME))))
+				       (gtk-tree-model-get-value model iter COL-NAME))))
+	 (if (zerop  dir)
+	     (external-program:start "vlc" (list path))
+	     (progn
+	       (format t "[~A]~%" path)
+	       (filebox-set-path fb (concatenate 'string (namestring path) "/"))))
+	 
 					;	 (format t "ITER ~A ~%" path )
 					;TODO: figure out application
-	 (external-program:start "vlc" (list path))
-	 ;; selected
+	 
+		 ;; selected
 					;	 (gtk-tree-selection-selected-foreach sel (lambda (mod path iter) (format t "MULT SEL ~A~%" (gtk-tree-model-get-value mod iter COL-ID))))
 	 )))
     (filebox-reload fb) ;initial load

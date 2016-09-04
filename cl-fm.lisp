@@ -46,53 +46,62 @@
 
 
 |#
+(defun app-quit (eli)
+  (declare (ignore eli))
+  (gtk-widget-destroy *window*)
+  (format t "quit done~%")
+;  (gtk-main-quit)
+;  (g-signal-emit *window* "delete-event")
+  )
+(defun app-set-path (eli)
+  (filebox-set-path *fb* "/home/stacksmith/Downloads/")
+  t)
+(eli::eli-def app-up
+  (filebox-up *fb*)
+  )
+(defun bind-keys ()
+  (setf *keymap-top* '(("top")))
+  (eli-bind "C-x C-c" #'app-quit)
+  (eli-bind "C-x C-f" #'app-set-path)
+  (eli-bind "^" #'app-up)
+  )
 
 (defparameter *fb* nil)
 (defun  test (&key (stdout *standard-output*))
-  (let ((fb nil))
-    (within-main-loop
-      (setf *standard-output* stdout) ;enable output in this thread
-      (setf *window* (make-instance 'gtk-window
-				    :title "filebox"
-				    :type :toplevel
-				    :border-width 0
-				    :default-width 640
-				    :default-height 480))
-      
-      (let (;(w-select (new-window-select))
-					;	  (split nil)
-					;	  (notebook (make-instance 'gtk-notebook))
-					;	  (tab-hbox1 (make-instance 'gtk-box   :orientation :horizontal))
-					;	  (tab-label1 (make-instance 'gtk-label :label "Select"))
-					;	  (tab-hbox2 (make-instance 'gtk-box   :orientation :horizontal))
-					;	  (tab-label2 (make-instance 'gtk-label :label "Rename"))
+  
+  (within-main-loop
+    (setf *standard-output* stdout) ;enable output in this thread
+    (setf *window* (make-instance 'gtk-window
+				  :title "filebox"
+				  :type :toplevel
+				  :border-width 0
+				  :default-width 640
+				  :default-height 480))
+    (let ((contents (make-instance 'gtk-box :orientation :vertical ))
+	  (scrolled (make-instance 'gtk-scrolled-window
+				   :border-width 3
+				   :hscrollbar-policy :automatic
+				   :vscrollbar-policy :automatic))
+	  (eli (make-eli-bar))
+	  (fb (create-filebox "/media/stacksmith/DiskA/Trash/")))
+      (gtk-container-add scrolled (filebox-widget fb ))
+      (gtk-box-pack-start contents scrolled)
+      (gtk-box-pack-end contents eli :expand nil)
+      (setf *fb* fb)
+      (gtk-container-add *window* contents))
+    
+    (g-signal-connect *window* "key-press-event" 'eli::on-key-press)
 
-					;
-					;	  (page2 (make-instance 'gtk-label:label "crap2"))
-	    )
-					;     (gtk-box-pack-start tab-hbox1 tab-label1)
-					;    (gtk-widget-show-all tab-hbox1)
-					;   (gtk-box-pack-start tab-hbox2 tab-label2)
-					;  (gtk-widget-show-all tab-hbox2)
-	
-					;      (gtk-notebook-add-page notebook (filebox-widget fb) tab-hbox1)
-					;      (gtk-notebook-add-page notebook page2 tab-hbox2)
-	
-	(setf fb  (create-filebox "/media/stacksmith/DiskA/Trash/"))
-	(setf *fb* fb)
-	(gtk-container-add *window* (filebox-widget fb ))
-	
-
-	(g-signal-connect *window* "destroy"
-			  (lambda (widget)
-			    (declare (ignore widget))
-			    (format t "done")
-			    (leave-gtk-main)))
-	
-	(gtk-widget-show-all *window*)
-	
-	
-	))))
+    (g-signal-connect *window* "destroy"
+		      (lambda (widget)
+			(declare (ignore widget))
+			(format t "done")
+			(leave-gtk-main)))
+    (bind-keys)
+    (gtk-widget-show-all *window*)
+    
+    
+    ))
 
 #|
 (g-signal-connect

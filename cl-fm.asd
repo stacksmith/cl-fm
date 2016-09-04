@@ -6,7 +6,7 @@
   :license "MIT"
   :depends-on (#:cl-cffi-gtk      ;gui
                #:cl-fad           ;filenames
-	       #:cl-unicode       ;hopefully makes key names compatible
+	       #:gtk-emacs-like-input
                #:cl-ppcre         ;fancy searches
 	       #:external-program ;execute external program
 	       )
@@ -16,9 +16,6 @@
 	       (:file "xattr")
 	       (:file "model")
 	       (:file "drag-and-drop")
-	       (:file "keysyms")
-	       (:file "keystroke")
-	       (:file "keymap")
 	       (:file "filebox")
                (:file "cl-fm")
 ))
