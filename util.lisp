@@ -1,7 +1,7 @@
 (in-package :cl-fm)
 ;; Filename structure holds original path and transformed name...
 (defstruct fentry path size)
-
+#|
 (defun walk-directory (dir)
   "walk directory and subdirs, return a list of all files" 
   (let ((list nil))
@@ -28,7 +28,7 @@
   (setf *wd* in
    *input* (load-flist :wd in  :recurse sub)))
 (defun iselect (&key (regex ".*")))
-
+|#
 (defun split-seq (seq separators &key (test #'char=) (default-value '("")))
   "split a sequence into sub sequences given the list of seperators."
   (let ((seps separators))

@@ -46,6 +46,9 @@
 
 
 |#
+(defparameter *fb* nil)
+
+
 (defun app-quit (eli)
   (declare (ignore eli))
   (gtk-widget-destroy *window*)
@@ -56,6 +59,7 @@
 (defun app-set-path (eli)
   (filebox-set-path *fb* "/home/stacksmith/Downloads/")
   t)
+
 (eli::eli-def app-up
   (filebox-up *fb*)
   )
@@ -66,13 +70,12 @@
   (eli-bind "^" #'app-up)
   )
 
-(defparameter *fb* nil)
 (defun  test (&key (stdout *standard-output*))
   
   (within-main-loop
     (setf *standard-output* stdout) ;enable output in this thread
     (setf *window* (make-instance 'gtk-window
-				  :title "filebox"
+				  :title "cl-fm"
 				  :type :toplevel
 				  :border-width 0
 				  :default-width 640
@@ -83,7 +86,7 @@
 				   :hscrollbar-policy :automatic
 				   :vscrollbar-policy :automatic))
 	  (eli (make-eli-bar))
-	  (fb (create-filebox "/media/stacksmith/DiskA/Trash/")))
+	  (fb (create-filebox "/media/stacksmith/DiskA/Trash/" *window*)))
       (gtk-container-add scrolled (filebox-widget fb ))
       (gtk-box-pack-start contents scrolled)
       (gtk-box-pack-end contents eli :expand nil)

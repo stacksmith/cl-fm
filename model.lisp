@@ -49,30 +49,28 @@
   ;; First load directories, then files...
   (let ((i 1))
     (if include-dirs
-	(loop for file-name in (cl-fad:list-directory path)
+	(loop for file-name in (uiop:subdirectories path); (cl-fad:list-directory path)
 	   do
-	     (when (cl-fad:directory-pathname-p file-name)
-	       (gtk-tree-store-set store (gtk-tree-store-append store nil)
-				   i          ;ID
-				   (file-namestring (string-right-trim "/" (namestring file-name) )) ;NAME
-				   -1         ;SIZE
-				   0          ;DATE
-				   #xf        ;Q
-				   1
-				   )
-	       (incf i))))
-    (loop for file-name in (cl-fad:list-directory path)
+	     (gtk-tree-store-set store (gtk-tree-store-append store nil)
+				 i          ;ID
+				 (file-namestring (string-right-trim "/" (namestring file-name) )) ;NAME
+				 -1         ;SIZE
+				 0          ;DATE
+				 #xf        ;Q
+				 1
+				 )
+	     (incf i)))
+    (loop for file-name in (uiop:directory-files path); (cl-fad:list-directory path)
        do
-	 (unless (cl-fad:directory-pathname-p file-name)
-	   (gtk-tree-store-set store (gtk-tree-store-append store nil)
-			       i          ;ID
-			       (file-namestring  (namestring file-name) ) ;NAME
-			       -1         ;SIZE
-			       0          ;DATE
-			       #xf        ;Q
-			       0
-			       )
-	   (incf i)))
+	 (gtk-tree-store-set store (gtk-tree-store-append store nil)
+			     i          ;ID
+			     (file-namestring file-name ) ;NAME
+			     -1         ;SIZE
+			     0          ;DATE
+			     #xf        ;Q
+			     0
+			     )
+	 (incf i))
     ))
 
 (defun model-postprocess (store directory)
@@ -82,46 +80,39 @@
    store
    (lambda (model path iter)
      (declare (ignore path))
-     (let ((fname (merge-pathnames directory (gtk-tree-model-get-value model iter COL-NAME)))
-	   
-	   ) ;build full filepath
-;
-         
+     (let* ((fname (merge-pathnames directory (gtk-tree-model-get-value model iter COL-NAME))) ;build full filepath
+	    (size (with-open-file (in fname) (file-length in)))
+	    (date (file-write-date fname))
+	    (q (q-get fname)))	;    (format t "~A \"~A\" ~A ~A ~A ~%" id name size date q)
+       (unless q (setf q #XF))
+       (if (or (< q 0) (> q 15)) (setf q #XF)) ;TODO: handle range check better !!!
 
-;
-       
-       
 
-       (let ((size (with-open-file (in fname) (file-length in)))
-	     (date (file-write-date fname))
-	     (q (q-get fname)))	;    (format t "~A \"~A\" ~A ~A ~A ~%" id name size date q)
-	 (unless q (setf q #XF))
-	 (if (or (< q 0) (> q 15)) (setf q #XF)) ;TODO: handle range check better !!!
-	 (gtk-tree-store-set-value model iter COL-SIZE size)
-	 (gtk-tree-store-set-value model iter COL-DATE date)
-	 (gtk-tree-store-set-value model iter COL-Q q)))
+       (gtk-tree-store-set-value model iter COL-SIZE size)
+       (gtk-tree-store-set-value model iter COL-DATE date)
+       (gtk-tree-store-set-value model iter COL-Q q))
      nil))) ;continue walk
 
 
 (defun model-set-q (model path iterator directory value )
   "called to modify q in file and model"
+  (declare (ignore path))
   (let ((pathname (merge-pathnames directory
 				   (gtk-tree-model-get-value model iterator COL-NAME))))
     (q-set value pathname))
   (gtk-tree-store-set-value model iterator COL-Q value)
 ;  (gtk-tree-model-row-changed model path iterator )
   )
+
 (defun on-row-changed (model tp iter)
+  (declare (ignore tp))
   (format t "~A ROW-CHANGED ~A~%" (get-universal-time) (first (gtk-tree-model-get model iter COL-ID))))
 (defun on-row-inserted (model tp iter)
+  (declare (ignore tp))
   (format t "~A ROW-INSERTED ~A~%" (get-universal-time) (first (gtk-tree-model-get model iter COL-ID))))
 (defun on-row-deleted (model tp)
+  (declare (ignore model))
   (format t "~A ROW-DELETED ~A~%" (get-universal-time) tp ))
 
 
 
-(defun fad-test (path)
-  (loop for file-path in (cl-fad:list-directory path)
-     do (format t "~a~%" file-path)
-       (with-open-file (stream file-path)
-	 (format t "~a~%" (read-line stream)))))

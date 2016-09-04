@@ -5,7 +5,6 @@
   :author "Stacksmith <fpgasm@apple2.x10.mx>"
   :license "MIT"
   :depends-on (#:cl-cffi-gtk      ;gui
-               #:cl-fad           ;filenames
 	       #:gtk-emacs-like-input
                #:cl-ppcre         ;fancy searches
 	       #:external-program ;execute external program

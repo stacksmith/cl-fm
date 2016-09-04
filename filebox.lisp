@@ -71,7 +71,7 @@
 
 
 
-(defstruct filebox widget store path)
+(defstruct filebox widget store path window)
   
 (defparameter *dragged-onto* nil) 
 ;;------------------------------------------------------------------------------
@@ -85,9 +85,9 @@
 	(make-gdk-color :red 65000 :green 0 :blue 0) ) )
 
 (defun custom-name (column renderer model iterator)
-  (declare (ignore column renderer model iterator))
-
-)
+  (declare (ignore column          ))
+  (let ((name (uiop:native-namestring (gtk-tree-model-get-value model iterator COL-NAME))))
+    (setf (gtk-cell-renderer-text-text renderer) name)))
 
 (defun custom-size (column renderer model iterator)
   (declare (ignore column))
@@ -154,12 +154,19 @@
   (model-postprocess (filebox-store fb) (filebox-path fb)))
 
 (defun filebox-set-path (fb path)
-  (setf (filebox-path fb) path)
+  (setf (filebox-path fb) path
+	(gtk-window-title (filebox-window fb)) (concatenate 'string "cl-fm  " path))
   (filebox-reload fb))
 
-(defun create-filebox (path)
-  (let ((fb (make-filebox :path path
-			  :store (create-model))))
+(defun filebox-up (fb)
+  (filebox-set-path
+   fb
+   (namestring (uiop:pathname-parent-directory-pathname (filebox-path fb))))
+)
+(defun create-filebox (path window)
+  (let ((fb (make-filebox :path nil
+			  :store (create-model)
+			  :window window)))
     (setf (filebox-widget fb)
 	  (create-filebox-widget (filebox-store fb))) 
 
@@ -173,8 +180,8 @@
 	      (iter (gtk-tree-model-get-iter model path))
 					;(sel (gtk-tree-view-get-selection tv))
 	      (dir (gtk-tree-model-get-value model iter COL-DIR))
-	      (path (merge-pathnames (filebox-path fb)
-				       (gtk-tree-model-get-value model iter COL-NAME))))
+	      (path (uiop:native-namestring (merge-pathnames (filebox-path fb)
+							     (gtk-tree-model-get-value model iter COL-NAME)))))
 	 (if (zerop  dir)
 	     (external-program:start "vlc" (list path))
 	     (progn
@@ -187,6 +194,7 @@
 		 ;; selected
 					;	 (gtk-tree-selection-selected-foreach sel (lambda (mod path iter) (format t "MULT SEL ~A~%" (gtk-tree-model-get-value mod iter COL-ID))))
 	 )))
+    (filebox-set-path fb path)
     (filebox-reload fb) ;initial load
     fb)
   )
