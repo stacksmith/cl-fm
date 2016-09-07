@@ -60,14 +60,23 @@
   (filebox-set-path *fb* "/home/stacksmith/Downloads/")
   t)
 
-(eli::eli-def app-up
+(defun  app-up (eli)
   (filebox-up *fb*)
   )
-(defun bind-keys ()
-  (setf *keymap-top* '(("top")))
-  (eli-bind "C-x C-c" #'app-quit)
-  (eli-bind "C-x C-f" #'app-set-path)
-  (eli-bind "^" #'app-up)
+
+
+
+(defun bind-keys (eli)
+  (with-slots (eli:keymap-top eli:keymap-instant) eli
+    (setf keymap-top   (new-keymap))
+    (bind keymap-top  "C-xC-c" #'app-quit) 
+    (bind keymap-top  "C-xC-f" #'app-set-path)
+    (bind keymap-top  "^" #'app-up)
+
+    (setf keymap-instant  (new-keymap))
+    (bind keymap-instant  "C-g" #'inst-cancel)
+    (bind keymap-instant "BS" #'inst-back-up)
+    )
   )
 
 (defun  test (&key (stdout *standard-output*))
@@ -85,23 +94,24 @@
 				   :border-width 3
 				   :hscrollbar-policy :automatic
 				   :vscrollbar-policy :automatic))
-	  (eli (make-eli-bar))
+	  (eli (make-bar *window*))
 	  (fb (create-filebox "/media/stacksmith/DiskA/Trash/" *window*)))
       (gtk-container-add scrolled (filebox-widget fb ))
       (gtk-box-pack-start contents scrolled)
-      (gtk-box-pack-end contents eli :expand nil)
+      (gtk-box-pack-end contents (eli::eli-bar eli) :expand nil)
       (setf *fb* fb)
-      (gtk-container-add *window* contents))
-    
-    (g-signal-connect *window* "key-press-event" 'eli::on-key-press)
+      (gtk-container-add *window* contents)
+      
+      (g-signal-connect *window* "key-press-event" 'eli::on-key-press)
 
-    (g-signal-connect *window* "destroy"
-		      (lambda (widget)
-			(declare (ignore widget))
-			(format t "done")
-			(leave-gtk-main)))
-    (bind-keys)
-    (gtk-widget-show-all *window*)
+      (g-signal-connect *window* "destroy"
+			(lambda (widget)
+			  (declare (ignore widget))
+			  (format t "done")
+			  (leave-gtk-main)))
+      (bind-keys eli)
+      (gtk-widget-show-all *window*)
+      (reset eli :full t))
     
     
     ))
