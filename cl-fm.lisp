@@ -39,22 +39,25 @@
 
 
 |#
+(use-package 'eli)
 (defparameter *fb* nil)
 
 
 (defun app-set-path (eli)
+  (declare (ignore eli))
   (filebox-set-path *fb* "/home/stacksmith/Downloads/")
   t)
 
 (defun  app-up (eli)
+  (declare (ignore eli))
   (filebox-up *fb*)
   )
 
 
 
 (defun bind-keys (eli)
-  (with-slots (eli:keymap-top eli:keymap-instant) eli
-    (bind keymap-top  "C-xC-f" #'app-set-path)
+  (with-accessors ((keymap-top eli-keymap-top) (keymap-instant eli-keymap-instant)) eli
+    (bind keymap-top "<C-x><C-f>" #'app-set-path)
     (bind keymap-top  "^" #'app-up)
     )
   )
