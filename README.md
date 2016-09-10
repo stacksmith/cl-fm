@@ -8,7 +8,7 @@ cl-fm is a gtk-based file manager, written in Common Lisp.  It features
 - color-coding and tagging of files and directories
 - hackability in Lisp.
 
-![screenshot](https://raw.githubusercontent.com/stacksmith/cl-fm/master/resources/screenshot.png)
+![screenshot](/resources/screenshot.png)
 
 Work in progress.  Many unimplemented features.  Changes often.  Not ready for prime time.
 
