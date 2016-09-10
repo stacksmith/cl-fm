@@ -19,5 +19,7 @@ MIT license
 ## Depends on
 
 - cl-cffi-gtk
+- gtk-emacs-like-input
+
 
 
