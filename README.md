@@ -20,5 +20,5 @@ MIT license
 
 - cl-cffi-gtk
 
-[screenshot]: 
+[screenshot]: https://raw.githubusercontent.com/stacksmith/cl-fm/master/resources/screenshot.png
 
