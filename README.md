@@ -19,7 +19,7 @@ MIT license
 ## Depends on
 
 - cl-cffi-gtk
-- gtk-emacs-like-input
+- [gtk-emacs-like-input](https://github.com/stacksmith/gtk-emacs-like-input)
 
 
 
