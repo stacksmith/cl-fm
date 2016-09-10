@@ -85,8 +85,6 @@
       (setf *fb* fb)
       (gtk-container-add *window* contents)
       
-      (g-signal-connect *window* "key-press-event" 'on-key-press)
-
       (g-signal-connect *window* "destroy"
 			(lambda (widget)
 			  (declare (ignore widget))
