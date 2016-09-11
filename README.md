@@ -14,7 +14,7 @@ Work in progress.  Many unimplemented features.  Changes often.  Not ready for p
 
 ## License
 
-MIT license
+BSD license
 
 ## Depends on
 
