@@ -85,6 +85,7 @@
   (model-postprocess (filebox-store fb) (filebox-path fb)))
 
 (defun filebox-set-path (fb path)
+ ; (format t "FILEBOX-PATH: ~A~%PATH: ~A~%" (filebox-path fb) path)
   (setf (filebox-path fb) path
 	(gtk-window-title (filebox-window fb)) (concatenate 'string "cl-fm  " path))
   (filebox-reload fb))
@@ -92,8 +93,7 @@
 (defun filebox-up (fb)
   (filebox-set-path
    fb
-   (namestring (uiop:pathname-parent-directory-pathname (filebox-path fb))))
-)
+   (namestring (uiop:pathname-parent-directory-pathname (filebox-path fb)))))
 (defun create-filebox (path window)
   (let ((fb (make-filebox :path nil
 			  :store (create-model)
@@ -111,13 +111,15 @@
 	      (iter (gtk-tree-model-get-iter model path))
 					;(sel (gtk-tree-view-get-selection tv))
 	      (dir (gtk-tree-model-get-value model iter COL-DIR))
-	      (path (uiop:native-namestring (merge-pathnames (filebox-path fb)
-							     (gtk-tree-model-get-value model iter COL-NAME)))))
+	      (path (uiop:native-namestring (merge-pathnames (gtk-tree-model-get-value model iter COL-NAME)
+							     (filebox-path fb)))))
 	 (if (zerop dir)
 	     (external-program:start "vlc" (list path))
 	     (progn
 	       (format t "[~A]~%" path)
-	       (filebox-set-path fb (concatenate 'string (namestring path) "/"))))
+	       (format t "FILEBOX-PATH: ~A~%" (filebox-path fb))
+	       (format t "VALUE: ~A~%"  (gtk-tree-model-get-value model iter COL-NAME))
+	       (filebox-set-path fb (concatenate 'string (namestring path)))))
 	 					;TODO: figure out application
 	  ;; selected
 	  ;; (gtk-tree-selection-selected-foreach sel (lambda (mod path iter) (format t "MULT SEL ~A~%" (gtk-tree-model-get-value mod iter COL-ID))))

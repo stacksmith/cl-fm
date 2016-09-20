@@ -84,7 +84,8 @@
 	    do
 	      (gtk-tree-store-set store (gtk-tree-store-append store nil)
 				  i          ;ID
-				  (file-namestring (string-right-trim "/" (namestring file-name) )) ;NAME
+				  (concatenate 'string (car (last (pathname-directory file-name))) "/");;TODO: portability
+				  ;;(file-namestring (string-right-trim "/" (namestring file-name) )) ;NAME
 				  -1         ;SIZE
 				  0          ;DATE
 				  #xf        ;Q
@@ -142,13 +143,16 @@
 
 (defun on-row-changed (model tp iter)
   (declare (ignore tp))
-  (format t "~A ROW-CHANGED ~A~%" (get-universal-time) (first (gtk-tree-model-get model iter COL-ID))))
+  ;(format t "~A ROW-CHANGED ~A~%" (get-universal-time) (first (gtk-tree-model-get model iter COL-ID)))
+  )
 (defun on-row-inserted (model tp iter)
   (declare (ignore tp))
-  (format t "~A ROW-INSERTED ~A~%" (get-universal-time) (first (gtk-tree-model-get model iter COL-ID))))
+  ;(format t "~A ROW-INSERTED ~A~%" (get-universal-time) (first (gtk-tree-model-get model iter COL-ID)))
+  )
 (defun on-row-deleted (model tp)
-  (declare (ignore model))
-  (format t "~A ROW-DELETED ~A~%" (get-universal-time) tp ))
+  (declare (ignore model tp))
+  ;(format t "~A ROW-DELETED ~A~%" (get-universal-time) tp )
+  )
 
 
 
