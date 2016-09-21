@@ -48,3 +48,12 @@
   "Splits STRING into substrings at separator characters, eliminating those"
   (split-seq string separators))
 
+
+#-:lispworks
+(defmacro when-let ((var expr) &body body)
+  "Evaluates EXPR, binds it to VAR, and executes body if var is not nil."
+  `(let ((,var ,expr))
+     (when ,var
+       ,@body)))
+
+

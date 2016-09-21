@@ -1,6 +1,13 @@
 (in-package :cl-fm)
 ;; filebox - a widget containing a list of files
 
+(defmacro fb-signal-connect (instance detailed-signal handler (&rest parameters))
+  "like gtk-signal-connect, but
+1) specifies the handler's parameters;
+2) calls the handler with lexical fb in front of the parameters"
+  `(g-signal-connect ,instance ,detailed-signal
+		     (lambda (,@parameters) (,handler fb ,@parameters))))
+
 (defun print-date (stream date)
   "Given a universal time date, outputs to a stream."
   (if (and date  (> date 0))
@@ -8,11 +15,8 @@
 	  (decode-universal-time date)
 	(declare (ignore sec min hr dow dst-p tz))
 	(format stream "~4,'0d-~2,'0d-~2,'0d" yr mon day))))
-
-#|(defun fentry-path (fentry directory)
-  "convert fentry name into full path"
-  (merge-pathnames directory (fentry-name fentry)))
-|#
+ 
+  
 
 (defparameter *color-q*
   (make-array 16
@@ -71,19 +75,57 @@
 
 (defun filebox-reload (fb)
   "reload all data"
-  (model-refill (filebox-store fb) (filebox-path fb) :include-dirs t  ) 
-  (model-postprocess (filebox-store fb) (filebox-path fb)))
+  (with-slots (store path) fb
+    (model-refill store path  :include-dirs t)   
+    (model-postprocess store path)))
 
-(defun filebox-set-path (fb path)
- ; (format t "FILEBOX-PATH: ~A~%PATH: ~A~%" (filebox-path fb) path)
-  (setf (filebox-path fb) path
-	(gtk-window-title (filebox-window fb)) (concatenate 'string "cl-fm  " path))
-  (filebox-reload fb))
+(defun filebox-set-path (fb fpath)
+  (with-slots (path window) fb
+    (format t "FILEBOX-PATH: ~A~%PATH: ~A~%" path fpath)
+    
+    (setf path fpath
+	  (gtk-window-title window) (concatenate 'string "cl-fm  " fpath))
+    (filebox-reload fb)
+    (format t "FILEBOX-PATH: DONE~%")))
 
 (defun filebox-up (fb)
   (filebox-set-path
    fb
    (namestring (uiop:pathname-parent-directory-pathname (filebox-path fb)))))
+
+(defun fb-selected-count (tv)
+  "return t if multiple files selected"
+  (let ((count 0))
+    (gtk-tree-selection-selected-foreach
+     (gtk-tree-view-get-selection tv)
+     (lambda (model path iter)
+       (declare (ignore model path iter))
+       (incf count)))
+    count))
+
+(defun fb-pathname (fb name)
+  "return the path to the named file in this fb"
+  (concatenate
+   'string
+   (namestring (uiop:native-namestring
+		(merge-pathnames name (filebox-path fb))))))
+
+(defmacro fb-model-value (col)
+  "get the value from the model, using lexical 'model' & 'iter'"
+  `(gtk-tree-model-get-value model iter ,col))
+
+(defun on-row-activated (fb tv path column) ;aka double-click
+  (declare (ignore column))
+  (format t "ROW ACTIVATED ~A  ~%" path);
+  (let* ((model (gtk-tree-view-get-model tv))
+	 (iter (gtk-tree-model-get-iter model path))
+	 (fpath (fb-pathname fb (fb-model-value COL-NAME))))
+    (when (= (fb-selected-count tv) 1)
+      (if (= 1 (fb-model-value COL-DIR))
+	  (filebox-set-path fb fpath)
+	  (external-program:start "vlc" (list path)))))) ;TODO: dispatch on filetype
+	    
+
 (defun create-filebox (path window)
   (let ((fb (make-filebox :path nil
 			  :store (create-model)
@@ -91,26 +133,8 @@
     (setf (filebox-widget fb)
 	  (create-filebox-widget (filebox-store fb))) 
 
-					;    (model-init (filebox-store fb))
-     ;; Double-click
-    (g-signal-connect
-     (filebox-widget fb) "row-activated"
-     (lambda (tv path column )
-       (format t "ROW ACTIVATED ~A ~A ~A  ~%" tv path column)
-       (let* ((model (gtk-tree-view-get-model tv))
-	      (iter (gtk-tree-model-get-iter model path))
-					;(sel (gtk-tree-view-get-selection tv))
-	      (dir (gtk-tree-model-get-value model iter COL-DIR))
-	      (path (uiop:native-namestring (merge-pathnames (gtk-tree-model-get-value model iter COL-NAME)
-							     (filebox-path fb)))))
-	 (if (zerop dir)
-	     (external-program:start "vlc" (list path))
-	     (progn
-	       (format t "[~A]~%" path)
-	       (format t "FILEBOX-PATH: ~A~%" (filebox-path fb))
-	       (format t "VALUE: ~A~%"  (gtk-tree-model-get-value model iter COL-NAME))
-	       (filebox-set-path fb (concatenate 'string (namestring path))))))))
+    (fb-signal-connect (filebox-widget fb) "row-activated" on-row-activated (tv path column))
+    
     (filebox-set-path fb path)
-    (filebox-reload fb) ;initial load
     fb))
 
