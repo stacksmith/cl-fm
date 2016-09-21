@@ -3,7 +3,7 @@
 
 (defun print-date (stream date)
   "Given a universal time date, outputs to a stream."
-  (if (and date (integerp date) (> date 0))
+  (if (and date  (> date 0))
       (multiple-value-bind (sec min hr day mon yr dow dst-p tz)
 	  (decode-universal-time date)
 	(declare (ignore sec min hr dow dst-p tz))
@@ -38,17 +38,10 @@
 (defun foreach-selected-file (fb func)
   "func is (lambda (model path iterator).."
   (gtk-tree-selection-selected-foreach
-   (gtk-tree-view-get-selection (filebox-widget fb))	;extract selection
-   func)
- #| (lambda (model path iterator)
-    (let ((pathname (merge-pathnames (filebox-path fb)
-				     (gtk-tree-model-get-value model iterator COL-NAME)))))
-    (funcall func model path iterator filepath ))
- |#
- )
-
-(defun on-idle ())
-
+   (gtk-tree-view-get-selection (filebox-widget fb))
+   func))
+   
+ 
 (defun create-filebox-widget (model)
   "create gtk widget"
   (let ((view (make-instance 'gtk-tree-view
@@ -61,7 +54,7 @@
     (gtk-tree-view-column-set-visible (gtk-tree-view-get-column view COL-ID) nil)
     (gtk-tree-view-column-set-visible (gtk-tree-view-get-column view COL-DIR) nil)
     (gtk-tree-view-column-set-visible (gtk-tree-view-get-column view COL-Q) nil)
-;;(gtk-tree-view-column-set-visible (gtk-tree-view-get-column view COL-Q) nil)
+    ;;
     (gtk-tree-view-enable-grid-lines view )
     (gtk-tree-view-set-reorderable view nil)
     (setf (gtk-widget-can-focus view) t)
@@ -116,11 +109,7 @@
 	       (format t "[~A]~%" path)
 	       (format t "FILEBOX-PATH: ~A~%" (filebox-path fb))
 	       (format t "VALUE: ~A~%"  (gtk-tree-model-get-value model iter COL-NAME))
-	       (filebox-set-path fb (concatenate 'string (namestring path)))))
-	 					;TODO: figure out application
-	  ;; selected
-	  ;; (gtk-tree-selection-selected-foreach sel (lambda (mod path iter) (format t "MULT SEL ~A~%" (gtk-tree-model-get-value mod iter COL-ID))))
-	 )))
+	       (filebox-set-path fb (concatenate 'string (namestring path))))))))
     (filebox-set-path fb path)
     (filebox-reload fb) ;initial load
     fb))
