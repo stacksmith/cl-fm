@@ -31,13 +31,9 @@
   (if (= q #XF) *color-white*
       (elt *color-q*  q )))
 
-
-
 (defstruct filebox widget store path window)
   
 (defparameter *dragged-onto* nil) 
-
-
 
 (defun foreach-selected-file (fb func)
   "func is (lambda (model path iterator).."
@@ -51,8 +47,7 @@
  |#
  )
 
-(defun on-idle ()
-  ())
+(defun on-idle ())
 
 (defun create-filebox-widget (model)
   "create gtk widget"
@@ -64,6 +59,8 @@
     (gtk-tree-selection-set-mode (gtk-tree-view-get-selection view) :multiple)
     ;invisible columns
     (gtk-tree-view-column-set-visible (gtk-tree-view-get-column view COL-ID) nil)
+    (gtk-tree-view-column-set-visible (gtk-tree-view-get-column view COL-DIR) nil)
+    (gtk-tree-view-column-set-visible (gtk-tree-view-get-column view COL-Q) nil)
 ;;(gtk-tree-view-column-set-visible (gtk-tree-view-get-column view COL-Q) nil)
     (gtk-tree-view-enable-grid-lines view )
     (gtk-tree-view-set-reorderable view nil)

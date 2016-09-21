@@ -8,21 +8,24 @@
 (defconstant COL-DIR 5)
 
 ;;------------------------------------------------------------------------------
-;; custom routines - called by renderer
+;; custom routines - called by renderer to
+;; render the columns...
 ;;
+
 (defun custom-id (column renderer model iterator)
-  "id column custom render data function"
+  "renders the id column, seq row number"
   (declare (ignore column model iterator))
-;  (format t "~A ~%" 	  (gtk-tree-model-get model iterator 1 ))
   (setf (gtk-cell-renderer-text-background-gdk renderer)
 	(make-gdk-color :red 65000 :green 0 :blue 0) ) )
 
 (defun custom-name (column renderer model iterator)
-  (declare (ignore column          ))
+  "renders the name of the file or directory/"
+  (declare (ignore column))
   (let ((name (uiop:native-namestring (gtk-tree-model-get-value model iterator COL-NAME))))
     (setf (gtk-cell-renderer-text-text renderer) name)))
 
 (defun custom-size (column renderer model iterator)
+  "renders the file size.  -1 is unknown (permission issues, etc)"
   (declare (ignore column))
   (let ((size  (gtk-tree-model-get-value model iterator COL-SIZE))
 	(q (gtk-tree-model-get-value model iterator COL-Q)))
@@ -33,6 +36,7 @@
 		 (format nil "~:d" size)))))
 
 (defun custom-date (column renderer model iterator)
+  "rernder mod date in yr-mo-da format"
   (declare (ignore column))
   (let ((date (first (gtk-tree-model-get model iterator COL-DATE))))
     (setf (gtk-cell-renderer-text-text renderer)
@@ -40,7 +44,7 @@
 
 
 (defun create-column (number title &key (custom nil) (align nil) (scale 0.75) (expand nil))
-  "helper - create a single column with a text renderer"
+  "helper - create and return a single column with a text renderer"
   (let* ((renderer (gtk-cell-renderer-text-new))
 	 (column (gtk-tree-view-column-new-with-attributes title renderer "text" number)))
    (setf (gtk-cell-renderer-is-expander renderer) t)
@@ -55,7 +59,7 @@
     column))
 
 (defun create-columns ()
-  ;; Create columns
+  "create all columns"
   (list (create-column COL-ID "#" :align 1.0 :custom #'custom-id)
 	(create-column COL-NAME "Filename" :custom #'custom-name :expand t
 		       )
@@ -74,56 +78,63 @@
     (g-signal-connect model "row-changed" #'on-row-changed)
     model))
 
+(defun model-append-initial-dir (store i file-name)
+  "append an initial directory entry"
+  (gtk-tree-store-set
+   store
+   (gtk-tree-store-append store nil) ;iter
+   i          ;ID
+   (concatenate 'string (car (last (pathname-directory file-name))) "/");;TODO: portability
+   -1         ;SIZE
+   0          ;DATE
+   #xf        ;Q
+   1))
+
+(defun model-append-initial-file (store i file-name)
+  (gtk-tree-store-set
+   store (gtk-tree-store-append store nil)
+   i          ;ID
+   (file-namestring file-name ) ;NAME
+   -1         ;SIZE
+   0          ;DATE
+   #xf        ;Q
+   0))
+
 (defun model-refill (store path &key (include-dirs t))
   "clear gtk store and reload store with data from filesystem"
   (gtk-tree-store-clear store)
   ;; First load directories, then files...
+;  (format t "I: ~A~%" (uiop:subdirectories path))
   (let ((i 1))
     (and include-dirs
 	 (loop for file-name in (uiop:subdirectories path); (cl-fad:list-directory path)
 	    do
-	      (gtk-tree-store-set store (gtk-tree-store-append store nil)
-				  i          ;ID
-				  (concatenate 'string (car (last (pathname-directory file-name))) "/");;TODO: portability
-				  ;;(file-namestring (string-right-trim "/" (namestring file-name) )) ;NAME
-				  -1         ;SIZE
-				  0          ;DATE
-				  #xf        ;Q
-				  1
-				  )
+	      (model-append-initial-dir store i file-name)
 	      (incf i)))
     
     (loop for file-name in (uiop:directory-files path); (cl-fad:list-directory path)
        do
-	 (gtk-tree-store-set store (gtk-tree-store-append store nil)
-			     i          ;ID
-			     (file-namestring file-name ) ;NAME
-			     -1         ;SIZE
-			     0          ;DATE
-			     #xf        ;Q
-			     0
-			     )
-	 (incf i))
-    ))
+	 (model-append-initial-file store i file-name)
+	 (incf i))))
 
 (defun model-postprocess (store directory)
   "across all files in model, update size, date and q"
-  (format t "XXXXXXXXXXXXXXXXXXXXXX~%")
   (gtk-tree-model-foreach
    store
    (lambda (model path iter)
      (declare (ignore path))
-     (let* ((fname (merge-pathnames directory (gtk-tree-model-get-value model iter COL-NAME))) ;build full filepath
+     (let* ((fname (merge-pathnames (gtk-tree-model-get-value model iter COL-NAME)
+				    directory)) ;build full filepath
+	    
+	    ;; size may fail if permissions are no-good...
 	    (size (handler-case
 		      (with-open-file (in fname :element-type '(unsigned-byte 8))
 			(file-length in))
 		    (t () -1))) ;on error, size is nil
 	    (date (file-write-date fname))
-	    (q (q-get fname)))	;    (format t "~A \"~A\" ~A ~A ~A ~%" id name size date q)
- 
+	    (q (q-get fname)))
        (unless q (setf q #XF))
        (if (or (< q 0) (> q 15)) (setf q #XF)) ;TODO: handle range check better !!!
-
 
        (gtk-tree-store-set-value model iter COL-SIZE size)
        (gtk-tree-store-set-value model iter COL-DATE date)
