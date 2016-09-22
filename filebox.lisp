@@ -5,7 +5,6 @@
 (export 'gdk-window-get-cursor)
 
 (defcfun ("gdk_window_set_cursor" gdk-window-set-cursor) :void
-    
   (window (g-object gdk-window))
   (cursor (g-object gdk-cursor)))
 (export 'gdk-window-set-cursor)
@@ -93,21 +92,32 @@
     (model-postprocess store path)))
 (defparameter parent nil)
 (defparameter *cursor-watch* (gdk-cursor-new-for-display (gdk-display-get-default) :watch) )
+
 (defun filebox-set-path (fb fpath)
-  (with-slots (path window) fb
-;    (if (filebox-widget fb)(format t "xxx:~A~%" (gtk-widget-get-parent-window (filebox-widget fb))))
-    (unwind-protect
-	 (progn
-	   (gdk-window-set-cursor
-	    (gtk-widget-get-parent-window window)
-	    (gdk-cursor-new-for-display (gdk-display-get-default) :watch) )
-;	   (format t "xxx:~A~%" (gdk-window-get-cursor (gtk-widget-get-parent-window window) ))
-	   (format t "FILEBOX-PATH: ~A~%PATH: ~A~%" path fpath)
-					; (sleep 5)
-	   (setf path fpath
-		 (gtk-window-title window) (concatenate 'string "cl-fm  " fpath))
-	   (filebox-reload fb)
-	   (format t "FILEBOX-PATH: DONE~%"))))) ;restore old cursor
+  (flet ((refill-prim ()
+	    (sleep 5)
+ 
+	     (with-slots (store path) fb
+	       (model-refill store path  :include-dirs t)   
+	       (model-postprocess store path)
+
+	       (gdk::gdk-window-set-cursor
+		(gdk-screen-get-root-window (gdk-screen-get-default))  
+		(gdk-cursor-new :left-ptr)))))
+
+    (with-slots (path window) fb    
+      (gdk::gdk-window-set-cursor
+       (gdk-screen-get-root-window (gdk-screen-get-default))  
+       (gdk-cursor-new :watch))
+      
+      (format t "FILEBOX-PATH: ~A~%PATH: ~A~%" path fpath)
+      (setf path fpath
+	    (gtk-window-title window) (concatenate 'string "cl-fm  " fpath))
+		;(filebox-reload fb)
+      (g-idle-add #'refill-prim)
+      (format t "FILEBOX-PATH: DONE~%")
+)) ;restore old cursor
+)
 
 (defun filebox-up (fb)
   (filebox-set-path
@@ -154,7 +164,10 @@
 	  (create-filebox-widget (filebox-store fb))) 
    
     (fb-signal-connect (filebox-widget fb) "row-activated" on-row-activated (tv path column))
-    
+  
     (filebox-set-path fb path)
+
+
+   
     fb))
 

@@ -94,6 +94,7 @@
 			  (leave-gtk-main)))
       (bind-keys eli)
       (gtk-widget-show-all *window*)
+      
       (reset eli :full t))
     
     
