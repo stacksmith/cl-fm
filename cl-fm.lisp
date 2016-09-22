@@ -59,6 +59,7 @@
   (with-accessors ((keymap-top eli-keymap-top) (keymap-instant eli-keymap-instant)) eli
     (bind keymap-top "<C-x><C-f>" #'app-set-path)
     (bind keymap-top  "^" #'app-up)
+    (bind keymap-top "<LEFT>" #'app-up)
     )
   )
 
@@ -72,13 +73,14 @@
 				  :border-width 0
 				  :default-width 640
 				  :default-height 480))
-    (let ((contents (make-instance 'gtk-box :orientation :vertical ))
-	  (scrolled (make-instance 'gtk-scrolled-window
-				   :border-width 3
-				   :hscrollbar-policy :automatic
-				   :vscrollbar-policy :automatic))
-	  (eli (make-eli *window*))
-	  (fb (create-filebox "/media/stacksmith/DiskA/Trash/" *window*)))
+    (let* ((contents (make-instance 'gtk-box :orientation :vertical ))
+	   (scrolled (make-instance 'gtk-scrolled-window
+				    :border-width 3
+				    :hscrollbar-policy :automatic
+				    :vscrollbar-policy :automatic))
+	   (fb (create-filebox "/media/stacksmith/DiskA/Trash/" *window*))
+	   (eli (make-eli *window* fb))
+)
       (gtk-container-add scrolled (filebox-widget fb ))
       (gtk-box-pack-start contents scrolled)
       (gtk-box-pack-end contents (eli-bar eli) :expand nil)

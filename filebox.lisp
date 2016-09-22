@@ -1,3 +1,16 @@
+(in-package :gdk)
+(defcfun ("gdk_window_get_cursor" gdk-window-get-cursor)
+    (g-object gdk-cursor)
+  (window (g-object gdk-window)))
+(export 'gdk-window-get-cursor)
+
+(defcfun ("gdk_window_set_cursor" gdk-window-set-cursor) :void
+    
+  (window (g-object gdk-window))
+  (cursor (g-object gdk-cursor)))
+(export 'gdk-window-set-cursor)
+
+
 (in-package :cl-fm)
 ;; filebox - a widget containing a list of files
 
@@ -78,15 +91,23 @@
   (with-slots (store path) fb
     (model-refill store path  :include-dirs t)   
     (model-postprocess store path)))
-
+(defparameter parent nil)
+(defparameter *cursor-watch* (gdk-cursor-new-for-display (gdk-display-get-default) :watch) )
 (defun filebox-set-path (fb fpath)
   (with-slots (path window) fb
-    (format t "FILEBOX-PATH: ~A~%PATH: ~A~%" path fpath)
-    
-    (setf path fpath
-	  (gtk-window-title window) (concatenate 'string "cl-fm  " fpath))
-    (filebox-reload fb)
-    (format t "FILEBOX-PATH: DONE~%")))
+;    (if (filebox-widget fb)(format t "xxx:~A~%" (gtk-widget-get-parent-window (filebox-widget fb))))
+    (unwind-protect
+	 (progn
+	   (gdk-window-set-cursor
+	    (gtk-widget-get-parent-window window)
+	    (gdk-cursor-new-for-display (gdk-display-get-default) :watch) )
+;	   (format t "xxx:~A~%" (gdk-window-get-cursor (gtk-widget-get-parent-window window) ))
+	   (format t "FILEBOX-PATH: ~A~%PATH: ~A~%" path fpath)
+					; (sleep 5)
+	   (setf path fpath
+		 (gtk-window-title window) (concatenate 'string "cl-fm  " fpath))
+	   (filebox-reload fb)
+	   (format t "FILEBOX-PATH: DONE~%"))))) ;restore old cursor
 
 (defun filebox-up (fb)
   (filebox-set-path
@@ -116,14 +137,13 @@
 
 (defun on-row-activated (fb tv path column) ;aka double-click
   (declare (ignore column))
-  (format t "ROW ACTIVATED ~A  ~%" path);
   (let* ((model (gtk-tree-view-get-model tv))
 	 (iter (gtk-tree-model-get-iter model path))
 	 (fpath (fb-pathname fb (fb-model-value COL-NAME))))
     (when (= (fb-selected-count tv) 1)
       (if (= 1 (fb-model-value COL-DIR))
 	  (filebox-set-path fb fpath)
-	  (external-program:start "vlc" (list path)))))) ;TODO: dispatch on filetype
+	  (external-program:start "vlc" (list fpath)))))) ;TODO: dispatch on filetype
 	    
 
 (defun create-filebox (path window)
@@ -132,7 +152,7 @@
 			  :window window)))
     (setf (filebox-widget fb)
 	  (create-filebox-widget (filebox-store fb))) 
-
+   
     (fb-signal-connect (filebox-widget fb) "row-activated" on-row-activated (tv path column))
     
     (filebox-set-path fb path)
