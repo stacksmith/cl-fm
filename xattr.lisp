@@ -11,38 +11,31 @@
 (use-foreign-library libattr)
 ;; BUG the first access seems to return success/0 sometimes?
 (defun q-get (path)
-  "retreive q attr given a path or a string"
-  (let ((v 0))
-    (with-foreign-pointer (buf 257)
-      (with-foreign-object (size :int)
-	(setf (mem-aref size :int) -1)
-	(let ((res (foreign-funcall
-		    "attr_get" 
-		    :string (namestring path)
-		    :string "q"
-		    :pointer buf
-		    :pointer size
-		    :int 0
-		    :int ;return
-		    )))
-	  (if (= 0 res) 
-	      (progn
-		;(format t "~A SUCCESS SIZE ~A~%~%" path (mem-aref size :int) )
-		(setf v (- (mem-aref buf :char) 48)))
-	      (progn
-		;(format t "~A FAILED SIZE ~A~%" path (mem-aref size :int) )
-		)))))
-        v))
+  "retreive q attr given a path or a string, or nil"
+  (format t ":~A~%" path)
+  (with-foreign-pointer (buf 257)
+    (with-foreign-object (size :int)
+      (setf (mem-aref size :int) -1)
+      (let ((res (foreign-funcall
+		  "attr_get" 
+		  :string (namestring path)
+		  :string "q"
+		  :pointer buf
+		  :pointer size
+		  :int 0
+		  :int ;return
+		  )))
+	(and (zerop res)
+	     (- (mem-aref buf :char) 48))))))
+
 ;;TODO: fix to smaller buffer
 (defun q-set (value path)
   "set q attr given a path or string"
-  (let ((q (with-output-to-string (str) (format str "~A" value)) ))
-    (foreign-funcall "attr_set" 
-		     :string (namestring path)
-		     :string "q"
-		     :string q
-		     :int 1
-		     :int 0
-		     :int ;return
-		     )))
+  (foreign-funcall "attr_set" 
+		   :string (namestring path)
+		   :string "q"
+		   :string (format nil "~A" value) 
+		   :int 1
+		   :int 0
+		   :int))
 

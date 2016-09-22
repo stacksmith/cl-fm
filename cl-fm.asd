@@ -16,6 +16,5 @@
 	       (:file "model")
 	       (:file "drag-and-drop")
 	       (:file "filebox")
-               (:file "cl-fm")
-))
+               (:file "cl-fm" )))
 

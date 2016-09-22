@@ -54,12 +54,16 @@
   )
 
 
+(defun tester (eli) (declare (ignore eli))
+   (format t "xxx:~A~%" (gdk-screen-get-root-window (gdk-screen-get-default))  )
+  )
 
 (defun bind-keys (eli)
   (with-accessors ((keymap-top eli-keymap-top) (keymap-instant eli-keymap-instant)) eli
-    (bind keymap-top "<C-x><C-f>" #'app-set-path)
-    (bind keymap-top  "^" #'app-up)
-    (bind keymap-top "<LEFT>" #'app-up)
+    (eli:bind keymap-top "<C-x><C-f>" #'app-set-path)
+    (eli:bind keymap-top  "^" #'app-up)
+    (eli:bind keymap-top "<LEFT>" #'app-up)
+    (eli:bind keymap-top "<PAGE-DOWN>" #'tester)
     )
   )
 
@@ -95,7 +99,7 @@
       (bind-keys eli)
       (gtk-widget-show-all *window*)
       
-      (reset eli :full t))
+      (eli:reset eli :full t))
     
     
     ))

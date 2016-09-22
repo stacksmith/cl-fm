@@ -90,34 +90,25 @@
   (with-slots (store path) fb
     (model-refill store path  :include-dirs t)   
     (model-postprocess store path)))
-(defparameter parent nil)
-(defparameter *cursor-watch* (gdk-cursor-new-for-display (gdk-display-get-default) :watch) )
+
 
 (defun filebox-set-path (fb fpath)
-  (flet ((refill-prim ()
-	    (sleep 5)
- 
-	     (with-slots (store path) fb
-	       (model-refill store path  :include-dirs t)   
-	       (model-postprocess store path)
-
-	       (gdk::gdk-window-set-cursor
-		(gdk-screen-get-root-window (gdk-screen-get-default))  
-		(gdk-cursor-new :left-ptr)))))
-
-    (with-slots (path window) fb    
-      (gdk::gdk-window-set-cursor
-       (gdk-screen-get-root-window (gdk-screen-get-default))  
-       (gdk-cursor-new :watch))
-      
-      (format t "FILEBOX-PATH: ~A~%PATH: ~A~%" path fpath)
-      (setf path fpath
-	    (gtk-window-title window) (concatenate 'string "cl-fm  " fpath))
-		;(filebox-reload fb)
-      (g-idle-add #'refill-prim)
-      (format t "FILEBOX-PATH: DONE~%")
-)) ;restore old cursor
-)
+  ;; Refilling the model may take time, so we will set a wait cursor.  In order for
+  ;; the cursor redraw to happen, we have to run the refill in idle mode
+  (let ((gwin (gdk-screen-get-root-window (gdk-screen-get-default))))
+    (flet ((refill-prim ()
+	     (unwind-protect
+		  (with-slots (store path) fb
+		    (model-refill store path  :include-dirs t)   
+		    (model-postprocess store path))
+	       (gdk::gdk-window-set-cursor gwin (gdk-cursor-new :left-ptr)))))
+      ;;
+      (with-slots (path window) fb    
+	(gdk::gdk-window-set-cursor gwin (gdk-cursor-new :watch))
+	(setf path fpath
+	      (gtk-window-title window) (concatenate 'string "cl-fm  " fpath))
+	;; low priority seems to be necessary for the cursor to change
+	(g-idle-add #'refill-prim :priority glib:+g-priority-low+)))))
 
 (defun filebox-up (fb)
   (filebox-set-path
