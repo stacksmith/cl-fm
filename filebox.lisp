@@ -2,12 +2,6 @@
 (in-package :cl-fm)
 ;; filebox - a widget containing a list of files
 
-(defmacro fb-signal-connect (instance detailed-signal handler (&rest parameters))
-  "like gtk-signal-connect, but
-1) specifies the handler's parameters;
-2) calls the handler with lexical fb in front of the parameters"
-  `(g-signal-connect ,instance ,detailed-signal
-		     (lambda (,@parameters) (,handler fb ,@parameters))))
 
 (defun print-date (stream date)
   "Given a universal time date, outputs to a stream."
@@ -18,6 +12,27 @@
 	(format stream "~4,'0d-~2,'0d-~2,'0d" yr mon day))))
  
   
+(defun fb-selected-count (tv)
+  "return t if multiple files selected"
+  (let ((count 0))
+    (gtk-tree-selection-selected-foreach
+     (gtk-tree-view-get-selection tv)
+     (lambda (model path iter)
+       (declare (ignore model path iter))
+       (incf count)))
+    count))
+
+(defun fb-pathname (fb name)
+  "return the path to the named file in this fb"
+  (concatenate
+   'string
+   (namestring (uiop:native-namestring
+		(merge-pathnames name (filebox-path fb))))))
+
+(defmacro fb-model-value (col)
+  "get the value from the model, using lexical 'model' & 'iter'"
+  `(gtk-tree-model-get-value model iter ,col))
+
 
 (defparameter *color-q*
   (make-array 16
@@ -47,32 +62,7 @@
    func))
    
  
-(defun create-filebox-widget (model)
-  "create gtk widget"
-  (let ((view (make-instance 'gtk-tree-view
-			     :model model))) 
-    (loop for column in (create-columns) do
-	 (gtk-tree-view-append-column view column))
-    (gtk-tree-view-set-rules-hint view 1) ;display stripes
-    (gtk-tree-selection-set-mode (gtk-tree-view-get-selection view) :multiple)
-    ;invisible columns
-    (gtk-tree-view-column-set-visible (gtk-tree-view-get-column view COL-ID) nil)
-    (gtk-tree-view-column-set-visible (gtk-tree-view-get-column view COL-DIR) nil)
-    (gtk-tree-view-column-set-visible (gtk-tree-view-get-column view COL-Q) nil)
-    ;;
-    (gtk-tree-view-enable-grid-lines view )
-    (gtk-tree-view-set-reorderable view nil)
-    (setf (gtk-widget-can-focus view) t)
-    (setf (gtk-tree-view-enable-search view) nil); prevent key eating search box
-    (drag-and-drop-setup view) ;see "drag-and-drop.lisp"
-;    (keystroke-setup view) ;see "keystroke.lisp"
 
-    (gdk-threads-add-idle #'(lambda ()
-			   ;   (format t "IDLE..." )
-			   ;   (sleep 10)
-			   ;   (format t "IDLE...>~%" )
-			      nil  ))
-    view))
 
 (defun filebox-reload (fb)
   "reload all data"
@@ -104,28 +94,10 @@
    fb
    (namestring (uiop:pathname-parent-directory-pathname (filebox-path fb)))))
 
-(defun fb-selected-count (tv)
-  "return t if multiple files selected"
-  (let ((count 0))
-    (gtk-tree-selection-selected-foreach
-     (gtk-tree-view-get-selection tv)
-     (lambda (model path iter)
-       (declare (ignore model path iter))
-       (incf count)))
-    count))
 
-(defun fb-pathname (fb name)
-  "return the path to the named file in this fb"
-  (concatenate
-   'string
-   (namestring (uiop:native-namestring
-		(merge-pathnames name (filebox-path fb))))))
-
-(defmacro fb-model-value (col)
-  "get the value from the model, using lexical 'model' & 'iter'"
-  `(gtk-tree-model-get-value model iter ,col))
-
-(defun on-row-activated (fb tv path column) ;aka double-click
+;;==============================================================================
+(defun on-row-activated (fb tv path column) ;
+  "aka double-click.  Attempt to open file"
   (declare (ignore column))
   (let* ((model (gtk-tree-view-get-model tv))
 	 (iter (gtk-tree-model-get-iter model path))
@@ -134,7 +106,32 @@
       (if (= 1 (fb-model-value COL-DIR))
 	  (filebox-set-path fb fpath)
 	  (external-program:start "vlc" (list fpath)))))) ;TODO: dispatch on filetype
-	    
+
+;;==============================================================================
+(defun create-filebox-widget (model)
+  "create gtk widget"
+  (let ((view (make-instance 'gtk-tree-view
+			     :model model))) 
+    (loop for column in (create-columns) do
+	 (gtk-tree-view-append-column view column))
+    (gtk-tree-view-set-rules-hint view 1) ;display stripes
+    (gtk-tree-selection-set-mode (gtk-tree-view-get-selection view) :multiple)
+    ;invisible columns
+    (gtk-tree-view-column-set-visible (gtk-tree-view-get-column view COL-ID) nil)
+    (gtk-tree-view-column-set-visible (gtk-tree-view-get-column view COL-DIR) nil)
+    (gtk-tree-view-column-set-visible (gtk-tree-view-get-column view COL-Q) nil)
+    ;;
+    (gtk-tree-view-enable-grid-lines view )
+    (gtk-tree-view-set-reorderable view nil)
+    (setf (gtk-widget-can-focus view) t)
+    (setf (gtk-tree-view-enable-search view) nil); prevent key eating search box
+    (gdk-threads-add-idle #'(lambda ()
+			   ;   (format t "IDLE..." )
+			   ;   (sleep 10)
+			   ;   (format t "IDLE...>~%" )
+			      nil  ))
+    view))
+
 
 (defun create-filebox (path window)
   (let ((fb (make-filebox :path nil
@@ -142,7 +139,9 @@
 			  :window window)))
     (setf (filebox-widget fb)
 	  (create-filebox-widget (filebox-store fb))) 
-   
+
+    (drag-and-drop-setup fb)		;see "drag-and-drop.lisp"
+
     (fb-signal-connect (filebox-widget fb) "row-activated" on-row-activated (tv path column))
   
     (filebox-set-path fb path)

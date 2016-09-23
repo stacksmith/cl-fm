@@ -1,6 +1,17 @@
 (in-package :cl-fm)
 ;; Filename structure holds original path and transformed name...
-(defstruct fentry path size)
+
+;;==============================================================================
+;; Use this within a scope containing fb!
+(defmacro fb-signal-connect (instance detailed-signal handler (&rest parameters))
+  "like g-signal-connect, but REQUIRES fb in scope!
+1) specifies the handler's parameters;
+2) calls the handler with lexical fb in front of the parameters"
+  `(g-signal-connect ,instance ,detailed-signal
+		     (lambda (,@parameters) (,handler fb ,@parameters))))
+
+
+
 #|
 (defun walk-directory (dir)
   "walk directory and subdirs, return a list of all files" 
