@@ -33,7 +33,6 @@
 (defparameter *drag-allowed* nil) ;disallow dragging unless something is selected
 (defparameter *dragged-p* nil) ;set by drag-begin, reset by drag-end
 (defparameter *dragged-onto* nil) ;drag target
-
 ;;; Treeview is bad with dragging multiple selections as clicking to drag will turn off
 ;;; the item clicked on prior to dragging.  We shall disallow the treeview from deselcting
 ;;; the selection for the drag...
@@ -64,18 +63,13 @@
   nil)
 
 (defun on-drag-begin (widget context)
-  (setf *dragged-p* t)
+  (declare (ignore context))
+  (setf *dragged-p*  (gtk-tree-view-get-selection widget))
   (format t "DRAG BEGIN. DRAG ALLOWED: ~A~%" *drag-allowed*)
   (setf *dragged-onto* nil)
-  
-  (let*((model (gtk-tree-view-get-model widget))
-	;;(selection (gtk-tree-view-get-selection widget))
-	;;(selected (gtk-tree-selection-get-selected-rows selection ))
-	)
-    ;; set appropriate icon here
-    (gtk-drag-source-set-icon-pixbuf widget (if *drag-allowed*
-						*pix-docs*
-						*pix-bad*))))
+  (gtk-drag-source-set-icon-pixbuf widget (if *drag-allowed*
+					      *pix-docs*
+					      *pix-bad*)))
 (defun on-button-release (widget event)
    (format t "BUTTON-RELEASE ~A ~%" (gdk-event-button-state event) )
   (let* ((x (round (gdk-event-button-x event)))
@@ -112,8 +106,19 @@
    
 
 (defun on-drag-data-received (widget context x y data info time )
-  (declare (ignore widget context x y info time))
+  "retreive data from a successful drop"
+  (declare (ignore widget x y info))
   (format t "DRAG-DATA-RECEIVED~%")
+  (let ((action (gdk-drag-context-get-suggested-action context)))
+    (format t "EXTERNAL DROP: ~A files ~A into ~A~%"
+	    action
+	    (gtk-selection-data-get-uris data)
+	    *dragged-onto*)
+    (gtk-drag-finish context t nil time )
+
+    t)
+
+  
   (format t "----~A----~%~%" (gtk-selection-data-get-uris data)))
 
 (defun on-drag-failed (widget context result)
@@ -125,7 +130,7 @@
 
 (defun on-drag-motion (widget context x y time)
   "return T if status set, nil if drop not permitted"
-  ;;(format t "DRAG-MOTION ~A (~A,~A)~%" widget x y)
+  ;(format t "DRAG-MOTION allowed:~A dragged-p:~A~%" *drag-allowed* *dragged-p*)
   (let ((path (gtk-tree-view-get-dest-row-at-pos widget x y)))
     (if path
 	(let((model (gtk-tree-view-get-model widget)))
@@ -140,22 +145,47 @@
 		  (progn
 		    ;;(format t "DIR: drop allowed~%")
 		    (gtk-tree-view-set-drag-dest-row widget path :into-or-after)
-		    ;; UNIMPLEMENTED in cl-cffi-gtk: dgk-drag-context-get-suggested-action
 		    (gdk-drag-status context (gdk-drag-context-get-suggested-action context) time)			 ;; for workaround, track destination id
 		    (setf *dragged-onto* (gtk-tree-model-get-value model iter COL-ID))
-		    (format t "ONTO ~A~%" *dragged-onto*)
+		    ;;(format t "ONTO ~A~%" *dragged-onto*)
 		    t)
 		  nil))))
 	;otherwise, dragging over something other than the treeview
 	nil)))
 
 (defun on-drag-drop (widget context x y time)
-  (format t "DRAG-DROP ~A (~A,~A)~%" widget x y)
- ; (multiple-value-bind (tpath pos) (gtk-tree-view-get-dest-row-at-pos widget x y)  )
-  t  
-  
-  (format t "...~A~%"  (gtk-drag-get-data widget context  (gtk-drag-dest-find-target widget context) time ))
-  (gtk-drag-finish context t nil time ))
+  (declare (ignore x y))
+;  (format t "DRAG-DROP ~A ~%" *dragged-onto*)
+  (if *dragged-p* ;we dragged it...
+      (if *drag-allowed*
+	  (progn ;dragged, allowed
+	    (let ((selected (gtk-tree-selection-get-selected-rows *dragged-p* ))
+		  (model (gtk-tree-view-get-model widget))
+		  (action (gdk-drag-context-get-suggested-action context)))
+	      (format t "INTERNAL DROP: ~A files ~A into ~A~%"
+		      action
+		      (loop for tpath in selected
+			 collect (model-path->name model tpath))
+		      *dragged-onto*))
+	    (gtk-drag-finish context t nil time )
+	    t)
+	  (progn ; dragged, not allowed
+	    (gtk-drag-finish context nil nil time )
+	    nil))
+					; we didn't drag
+      (let ((action (gdk-drag-context-get-suggested-action context))
+	    (target (gtk-drag-dest-find-target widget context)))
+	(format t "TARGET ~A TYPE ~A~%" target (type-of target))
+	(if (string= "NONE" target)
+	    (progn ;no common data target format, abort drop
+	      (gtk-drag-finish context nil nil time )
+	      nil)
+	    (progn
+	      (format t "EXTERNAL DROP: ~A files ~A into ~A~%"  action  "(...)" *dragged-onto*)
+	      ;;this will issue a drag-data-received and it will finish
+	      (gtk-drag-get-data widget context target time)
+	      (format t "A-OK ~A ~%" (gtk-drag-dest-find-target widget context))
+	      t))) ))
  
 
 

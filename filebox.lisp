@@ -1,14 +1,3 @@
-(in-package :gdk)
-(defcfun ("gdk_window_get_cursor" gdk-window-get-cursor)
-    (g-object gdk-cursor)
-  (window (g-object gdk-window)))
-(export 'gdk-window-get-cursor)
-
-(defcfun ("gdk_window_set_cursor" gdk-window-set-cursor) :void
-  (window (g-object gdk-window))
-  (cursor (g-object gdk-cursor)))
-(export 'gdk-window-set-cursor)
-
 
 (in-package :cl-fm)
 ;; filebox - a widget containing a list of files

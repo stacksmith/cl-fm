@@ -164,6 +164,11 @@
   (declare (ignore model tp))
   ;(format t "~A ROW-DELETED ~A~%" (get-universal-time) tp )
   )
-
+(defun model-path->name (model tree-path)
+  "get iter from path"
+  (gtk-tree-model-get-value
+   model
+   (gtk-tree-model-get-iter model tree-path)
+   COL-NAME))
 
 
