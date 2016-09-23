@@ -40,10 +40,10 @@
   (loop for f in uris
      collect (subseq f 7)) ) 
 
-(defun sel->pathstrings (selected model prefix)
+(defun sel->pathstrings (selected fb)
   "convert a dnd selection to a list of pathstrs of files in prefix dir."
   (loop for tpath in selected ;selected is a list of tree paths..
-     collect (concatenate 'string prefix (model-path->name model tpath))))
+     collect (fb-pathname fb (model-path->name (filebox-store fb) tpath))))
 
 ;;; Treeview is bad with dragging multiple selections as clicking to drag will turn off
 ;;; the item clicked on prior to dragging.  We shall disallow the treeview from deselcting
@@ -175,7 +175,7 @@
 		(progn ;dragged, allowed
 		  (let ((selected (gtk-tree-selection-get-selected-rows *dragged-p* ))
 			(model (filebox-store fb)))
-		    (file-action action (sel->pathstrings selected model (filebox-path fb))))
+		    (file-action action (sel->pathstrings selected fb)))
 		  (gtk-drag-finish context t nil time ) t)
 		(progn ; dragged, not allowed
 		  (gtk-drag-finish context nil nil time ) nil))
