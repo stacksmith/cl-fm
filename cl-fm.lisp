@@ -67,7 +67,7 @@
     )
   )
 
-(defun  test (&key (stdout *standard-output*))
+(defun  test (&key (dir "/media/stacksmith/DiskA/Trash/") (stdout *standard-output*))
   
   (within-main-loop
     (setf *standard-output* stdout) ;enable output in this thread
@@ -82,7 +82,7 @@
 				    :border-width 3
 				    :hscrollbar-policy :automatic
 				    :vscrollbar-policy :automatic))
-	   (fb (create-filebox "/media/stacksmith/DiskA/Trash/" *window*))
+	   (fb (create-filebox dir *window*))
 	   (eli (make-eli *window* fb)))
       
       (gtk-container-add scrolled (filebox-widget fb ))
@@ -94,7 +94,6 @@
       (g-signal-connect *window* "destroy"
 			(lambda (widget)
 			  (declare (ignore widget))
-			  (format t "done")
 			  (leave-gtk-main)))
       (bind-keys eli)
       (gtk-widget-show-all *window*)

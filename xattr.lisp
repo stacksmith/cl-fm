@@ -12,7 +12,6 @@
 ;; BUG the first access seems to return success/0 sometimes?
 (defun q-get (path)
   "retreive q attr given a path or a string, or nil"
-  (format t ":~A~%" path)
   (with-foreign-pointer (buf 257)
     (with-foreign-object (size :int)
       (setf (mem-aref size :int) -1)
