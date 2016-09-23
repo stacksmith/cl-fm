@@ -1,4 +1,7 @@
 (in-package :cl-fm)
+;;; TODO:
+;;; - autoscrol on drag
+
 ;;; Icon resources.
 (defparameter *pix-docs* (gdk-pixbuf-new-from-file (namestring (asdf:system-relative-pathname
 								'cl-fm "resources/icon-docs.png"))))
@@ -27,9 +30,10 @@
 				))
 
 
-(defparameter *drag-allowed* nil)
-(defparameter *dragged-p* nil)
-(defparameter *clicked-on* nil)
+(defparameter *drag-allowed* nil) ;disallow dragging unless something is selected
+(defparameter *dragged-p* nil) ;set by drag-begin, reset by drag-end
+(defparameter *dragged-onto* nil) ;drag target
+
 ;;; Treeview is bad with dragging multiple selections as clicking to drag will turn off
 ;;; the item clicked on prior to dragging.  We shall disallow the treeview from deselcting
 ;;; the selection for the drag...
@@ -38,7 +42,7 @@
   "set model callback to allow or disallow modification to selection"
   (gtk-tree-selection-set-select-function
    selection
-   (lambda (sel model path selp)
+   (lambda (sel model path selp) ;nil return means leave it unchanged...
      (declare (ignore sel model path selp))
      yesno)))
 ;;;
@@ -53,13 +57,11 @@
 	 (sel (gtk-tree-view-get-selection widget))
 	 (model (gtk-tree-view-get-model widget))
 	 (iter (gtk-tree-model-get-iter model path)))
-    (setf *clicked-on* (gtk-tree-model-get-value model iter COL-ID))
-					;(gtk-tree-view-set-cursor widget path)
     (enable-selection sel nil);disallow selection!
     ;; dragging is enabled if clicked on a selection
     (setf *drag-allowed* (gtk-tree-selection-path-is-selected sel path))
     )
-  t)
+  nil)
 
 (defun on-drag-begin (widget context)
   (setf *dragged-p* t)
@@ -73,13 +75,7 @@
     ;; set appropriate icon here
     (gtk-drag-source-set-icon-pixbuf widget (if *drag-allowed*
 						*pix-docs*
-						*pix-bad*))
-   
-    
-
-;;    
-    ;(format t "~A~%" icon)
-    ))
+						*pix-bad*))))
 (defun on-button-release (widget event)
    (format t "BUTTON-RELEASE ~A ~%" (gdk-event-button-state event) )
   (let* ((x (round (gdk-event-button-x event)))
@@ -88,8 +84,8 @@
 	 (sel (gtk-tree-view-get-selection widget))
 	 (model (gtk-tree-view-get-model widget))
 	 (iter (gtk-tree-model-get-iter model path))
-	 (released-on (gtk-tree-model-get-value model iter COL-ID)))
-    (format t "RELEASED-ON ~A~%" released-on)
+	 ;; (released-on (gtk-tree-model-get-value model iter COL-ID))
+	 )
     (enable-selection sel t)
     (let ((state (logand 15 (gdk-event-button-state event)))) ;bit 8 is 1 for release
       (if (not *dragged-p*)
@@ -105,44 +101,23 @@
 		 (gtk-tree-selection-unselect-path sel path) ;if selected, unselect
 		 (gtk-tree-selection-select-path sel path)) ;if unselected, select
 	     )))))
-  (setf *dragged-p* nil)
-  t)
+  nil)
 
 (defun on-drag-data-get (widget context data info time)
-  ;;; NEVER HAPPENS HERE
-  (format t "DRAG-DATA-GET ~A~%" info)
-  (format t "Drag1: ~A~%" (gtk-drag-dest-find-target widget context))
- ; (gtk-selection-data-set-uris data (list "file:///media/stacksmith/INTERNAL/downloads/GTK_dragndrop-1.pdf")) 
-					;  (format t "~A~%" (type-of data))
-					;(format t "ON-DRAG-DATA-GET~%~A~%~A from set~% " data)
-					;  (format t "AAA ~%")
-;					 (gtk-selection-data-set-text data "FUCK" )
-
-
- (let ((target (gtk-selection-data-target data))
-	(uri "file:///media/stacksmith/INTERNAL/downloads/GTK_dragndrop-1.pdf"))
-    (setf (gtk-selection-data-type data) target )
-    (setf (gtk-selection-data-format data) 8)
-    (setf (gtk-selection-data-data data) (cffi:foreign-string-alloc uri))
-    (setf (gtk-selection-data-length data) (length uri)))
- ; (format t "TARGET ~A~%" data)
-
- )
-(defun on-drag-data-received (widget context x y data info time )
-  (format t "DRAG-DATA-RECEIVED~%")
-					;  (format t " ~A ~A ~A ~A ~A ~A ~A~%" widget context x y data info etime)
-					;  (format t "~A~%~%"  (cffi:convert-from-foreign (gtk-selection-data-get-data selection) :string ))
-					;  (format t "~A~%" (cffi:foreign-string-to-lisp (gtk-selection-data-get-data data) :count 66))
-  
-  (format t "----~A----~%~%" data)
-  (format t "----~A----~%~%" (gtk-selection-data-get-uris data))
-;  (format t "----~A----~%~%" (gdk-atom-intern "text/uri-list" t))
- ; (gtk-drag-finish context t nil time)
-					;  (format t "++++~A~%" (cffi:foreign-string-to-lisp (gtk-selection-data-get-data data) :offset 0 :count (gtk-selection-data-get-length data)))
-;  (gtk-selection-convert widget data "text/uri-list" etime)
+  ;;; setting data does not work - cl-cffi-gtk bug.
+ ;; (format t "DRAG-DATA-GET ~A~%" info)
+ ;; (format t "Drag1: ~A~%" (gtk-drag-dest-find-target widget context))
+ ;; (gtk-selection-data-set-uris data (list "file:///media/stacksmith/INTERNAL/downloads/GTK_dragndrop-1.pdf"))
   )
+   
+
+(defun on-drag-data-received (widget context x y data info time )
+  (declare (ignore widget context x y info time))
+  (format t "DRAG-DATA-RECEIVED~%")
+  (format t "----~A----~%~%" (gtk-selection-data-get-uris data)))
 
 (defun on-drag-failed (widget context result)
+  (declare (ignore widget context result))
   (setf *dragged-onto* nil)
   (format t "DRAG FAILED~%"))
 
@@ -150,33 +125,43 @@
 
 (defun on-drag-motion (widget context x y time)
   "return T if status set, nil if drop not permitted"
-  (format t "DRAG-MOTION ~A (~A,~A)~%" widget x y)
-  (let*((path (gtk-tree-view-get-dest-row-at-pos widget x y)) ;not interested in pos
-	(model (gtk-tree-view-get-model widget))
-	(iter (gtk-tree-model-get-iter model path))
-	(isdir (= 1 (gtk-tree-model-get-value model iter COL-DIR))))
-    ;;allow drop into directries only, and then :into-or-after ignoring pos.
-    (when isdir ;t means drop allowed, otherwise nil
-      (format t "DIR: drop allowed~%")
-      (gtk-tree-view-set-drag-dest-row widget path :into-or-after)
-      ;; UNIMPLEMENTED in cl-cffi-gtk: dgk-drag-context-get-suggested-action
-      (gdk-drag-status context (gdk-drag-context-get-suggested-action context) time)
-          ;; for workaround, track destination id
-      (setf *dragged-onto* (gtk-tree-model-get-value model iter COL-ID))
-      t)))
+  ;;(format t "DRAG-MOTION ~A (~A,~A)~%" widget x y)
+  (let ((path (gtk-tree-view-get-dest-row-at-pos widget x y)))
+    (if path
+	(let((model (gtk-tree-view-get-model widget)))
+	  ;;(gtk-drag-source-set-icon-pixbuf widget *pix-docs*)
+	  ;;(format t "PATH: ~A~%" path)
+	  (let ((iter (gtk-tree-model-get-iter model path) ))
+	    ;; (format t "ITER: ~A~%" iter)
+	    (let ((isdir (= 1 (gtk-tree-model-get-value model iter COL-DIR))))
+	      ;;(format t "ISDIR: ~A~%" iter)
+	      ;;allow drop into directries only, and then :into-or-after ignoring pos.
+	      (if isdir	  ;t means drop allowed, otherwise nil
+		  (progn
+		    ;;(format t "DIR: drop allowed~%")
+		    (gtk-tree-view-set-drag-dest-row widget path :into-or-after)
+		    ;; UNIMPLEMENTED in cl-cffi-gtk: dgk-drag-context-get-suggested-action
+		    (gdk-drag-status context (gdk-drag-context-get-suggested-action context) time)			 ;; for workaround, track destination id
+		    (setf *dragged-onto* (gtk-tree-model-get-value model iter COL-ID))
+		    (format t "ONTO ~A~%" *dragged-onto*)
+		    t)
+		  nil))))
+	;otherwise, dragging over something other than the treeview
+	nil)))
 
 (defun on-drag-drop (widget context x y time)
   (format t "DRAG-DROP ~A (~A,~A)~%" widget x y)
-  (gtk-drag-finish context t nil time )
  ; (multiple-value-bind (tpath pos) (gtk-tree-view-get-dest-row-at-pos widget x y)  )
-  )
+  t  
   
-;  (format t "~A~%"  (gtk-drag-get-data widget context  (gtk-drag-dest-find-target widget context) time ))
-;  (gtk-drag-finish context t nil time)
+  (format t "...~A~%"  (gtk-drag-get-data widget context  (gtk-drag-dest-find-target widget context) time ))
+  (gtk-drag-finish context t nil time ))
+ 
 
 
 (defun on-drag-end (widget context )
-  (format t "DRAG-END ~A~%" context))
+  (format t "DRAG-END ~A~%" context)
+  (setf *dragged-p* nil))
 
 ;; drag and drop support
 ;; drag-data-get (GtkWidget signal) for sourcing data during dnd
@@ -242,8 +227,8 @@ static void multidrag_make_row_pixmaps(GtkTreeModel attribute((unused)) *model,
 (defun drag-and-drop-setup (view)
   (gtk-drag-dest-set view 0 *dnd-target-dest* '(:copy :move :link :private :ask))			 
   (gtk-drag-source-set view :button1-mask *dnd-target-src*  '(:copy :move :link :private :ask)) 
-  ;(g-signal-connect view "button-press-event" #'on-button-press)
-  ;(g-signal-connect view "button-release-event" #'on-button-release)
+  (g-signal-connect view "button-press-event" #'on-button-press)
+  (g-signal-connect view "button-release-event" #'on-button-release)
   ;;DRAG
 					;(g-signal-connect view "drag-data-get" #'on-drag-data-get)
   (g-signal-connect view "drag-begin" #'on-drag-begin)

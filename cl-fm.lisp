@@ -60,10 +60,10 @@
 
 (defun bind-keys (eli)
   (with-accessors ((keymap-top eli-keymap-top) (keymap-instant eli-keymap-instant)) eli
-    (eli:bind keymap-top "<C-x><C-f>" #'app-set-path)
-    (eli:bind keymap-top  "^" #'app-up)
-    (eli:bind keymap-top "<LEFT>" #'app-up)
-    (eli:bind keymap-top "<PAGE-DOWN>" #'tester)
+    (bind keymap-top "<C-x><C-f>" #'app-set-path)
+    (bind keymap-top  "^" #'app-up)
+    (bind keymap-top "<LEFT>" #'app-up)
+    (bind keymap-top "<PAGE-DOWN>" #'tester)
     )
   )
 
@@ -83,8 +83,8 @@
 				    :hscrollbar-policy :automatic
 				    :vscrollbar-policy :automatic))
 	   (fb (create-filebox "/media/stacksmith/DiskA/Trash/" *window*))
-	   (eli (make-eli *window* fb))
-)
+	   (eli (make-eli *window* fb)))
+      
       (gtk-container-add scrolled (filebox-widget fb ))
       (gtk-box-pack-start contents scrolled)
       (gtk-box-pack-end contents (eli-bar eli) :expand nil)
@@ -99,7 +99,7 @@
       (bind-keys eli)
       (gtk-widget-show-all *window*)
       
-      (eli:reset eli :full t))
+      (reset eli :full t))
     
     
     ))

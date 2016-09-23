@@ -11,6 +11,7 @@
 	       )
   :serial t
   :components ((:file "package")
+	       (:file "cl-cffi-gtk-fixes")
 	       (:file "util")
 	       (:file "xattr")
 	       (:file "model")
