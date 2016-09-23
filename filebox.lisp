@@ -12,15 +12,6 @@
 	(format stream "~4,'0d-~2,'0d-~2,'0d" yr mon day))))
  
   
-(defun fb-selected-count (tv)
-  "return t if multiple files selected"
-  (let ((count 0))
-    (gtk-tree-selection-selected-foreach
-     (gtk-tree-view-get-selection tv)
-     (lambda (model path iter)
-       (declare (ignore model path iter))
-       (incf count)))
-    count))
 
 (defun fb-pathname (fb name)
   "return the path to the named file in this fb"
@@ -52,22 +43,6 @@
 (defstruct filebox widget store path window)
   
 (defparameter *dragged-onto* nil) 
-
-(defun foreach-selected-row (fb func)
-  "func is (lambda (model path iterator).."
-  (gtk-tree-selection-selected-foreach
-   (gtk-tree-view-get-selection (filebox-widget fb))
-   func))
-
-(defun foreach-selected-pathstring (fb func)
-  "func is (lambda (pathstring).."
-  (gtk-tree-selection-selected-foreach
-   (gtk-tree-view-get-selection (filebox-widget fb))
-   (lambda (model path iter)
-     (declare (ignore path))
-     (funcall func (fb-pathname fb (fb-model-value COL-NAME))))))
-   
- 
 
 
 (defun filebox-reload (fb)
@@ -105,7 +80,7 @@
   (let* ((model (gtk-tree-view-get-model tv))
 	 (iter (gtk-tree-model-get-iter model path))
 	 (fpath (fb-pathname fb (fb-model-value COL-NAME))))
-    (when (= (fb-selected-count tv) 1)
+    (when (= (fb-selected-count fb) 1)
       (if (= 1 (fb-model-value COL-DIR))
 	  (filebox-set-path fb fpath)
 	  (external-program:start "vlc" (list fpath)))))) ;TODO: dispatch on filetype

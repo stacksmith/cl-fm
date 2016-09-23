@@ -17,6 +17,7 @@
 	       (:file "file-actions")
 	       (:file "model")
 	       (:file "drag-and-drop")
+	       (:file "selection")
 	       (:file "filebox")
                (:file "cl-fm" )))
 
