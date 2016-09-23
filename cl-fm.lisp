@@ -50,9 +50,18 @@
 
 (defun  app-up (eli)
   (declare (ignore eli))
-  (filebox-up *fb*)
-  )
+  (filebox-up *fb*))
 
+(defun app-q (fb num)
+  (foreach-selected-row
+   fb (lambda (model path iter)
+	(model-set-q model path iter (filebox-path fb) num))))
+
+(defun app-q-1 (eli) (app-q (eli:eli-payload eli) 1))
+(defun app-q-2 (eli) (app-q (eli:eli-payload eli) 2))
+(defun app-q-3 (eli) (app-q (eli:eli-payload eli) 3))
+(defun app-q-4 (eli) (app-q (eli:eli-payload eli) 4))
+(defun app-q-5 (eli) (app-q (eli:eli-payload eli) 5))
 
 (defun tester (eli) (declare (ignore eli))
    (format t "xxx:~A~%" (gdk-screen-get-root-window (gdk-screen-get-default))  )
@@ -64,6 +73,13 @@
     (bind keymap-top  "^" #'app-up)
     (bind keymap-top "<LEFT>" #'app-up)
     (bind keymap-top "<PAGE-DOWN>" #'tester)
+
+    (bind keymap-top "<C-1>" #'app-q-1)
+    (bind keymap-top "<C-2>" #'app-q-2)
+    (bind keymap-top "<C-3>" #'app-q-3)
+    (bind keymap-top "<C-4>" #'app-q-4)
+    (bind keymap-top "<C-5>" #'app-q-5)
+    
     )
   )
 

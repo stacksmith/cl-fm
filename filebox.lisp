@@ -24,10 +24,8 @@
 
 (defun fb-pathname (fb name)
   "return the path to the named file in this fb"
-  (concatenate
-   'string
-   (namestring (uiop:native-namestring
-		(merge-pathnames name (filebox-path fb))))))
+  (namestring (uiop:native-namestring
+	       (merge-pathnames name (filebox-path fb)))))
 
 (defmacro fb-model-value (col)
   "get the value from the model, using lexical 'model' & 'iter'"
@@ -55,24 +53,25 @@
   
 (defparameter *dragged-onto* nil) 
 
-(defun foreach-selected-file (fb func)
+(defun foreach-selected-row (fb func)
   "func is (lambda (model path iterator).."
   (gtk-tree-selection-selected-foreach
    (gtk-tree-view-get-selection (filebox-widget fb))
    func))
+
+(defun foreach-selected-pathstring (fb func)
+  "func is (lambda (pathstring).."
+  (gtk-tree-selection-selected-foreach
+   (gtk-tree-view-get-selection (filebox-widget fb))
+   (lambda (model path iter)
+     (declare (ignore path))
+     (funcall func (fb-pathname fb (fb-model-value COL-NAME))))))
    
  
 
 
 (defun filebox-reload (fb)
-  "reload all data"
-  (with-slots (store path) fb
-    (model-refill store path  :include-dirs t)   
-    (model-postprocess store path)))
-
-
-(defun filebox-set-path (fb fpath)
-  ;; Refilling the model may take time, so we will set a wait cursor.  In order for
+   ;; Refilling the model may take time, so we will set a wait cursor.  In order for
   ;; the cursor redraw to happen, we have to run the refill in idle mode
   (let ((gwin (gdk-screen-get-root-window (gdk-screen-get-default))))
     (flet ((refill-prim ()
@@ -84,10 +83,14 @@
       ;;
       (with-slots (path window) fb    
 	(gdk::gdk-window-set-cursor gwin (gdk-cursor-new :watch))
-	(setf path fpath
-	      (gtk-window-title window) (concatenate 'string "cl-fm  " fpath))
+	(setf (gtk-window-title window) (concatenate 'string "cl-fm  " path))
 	;; low priority seems to be necessary for the cursor to change
 	(g-idle-add #'refill-prim :priority glib:+g-priority-low+)))))
+
+
+(defun filebox-set-path (fb fpath)
+  (setf (filebox-path fb) fpath)
+  (filebox-reload fb))
 
 (defun filebox-up (fb)
   (filebox-set-path

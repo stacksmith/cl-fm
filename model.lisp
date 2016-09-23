@@ -145,8 +145,8 @@
 (defun model-set-q (model path iterator directory value )
   "called to modify q in file and model"
   (declare (ignore path))
-  (let ((pathname (merge-pathnames directory
-				   (gtk-tree-model-get-value model iterator COL-NAME))))
+  (let ((pathname (merge-pathnames (gtk-tree-model-get-value model iterator COL-NAME)
+				   directory )))
     (q-set value pathname))
   (gtk-tree-store-set-value model iterator COL-Q value)
 ;  (gtk-tree-model-row-changed model path iterator )
