@@ -65,14 +65,17 @@
 (defun app-q-4 (eli) (app-q (eli:eli-payload eli) 4))
 (defun app-q-5 (eli) (app-q (eli:eli-payload eli) 5))
 
-
+(defun app-gtk (eli)
+  (format t "APP-GTK~%") nil)
 (defun bind-keys (eli)
   (with-accessors ((keymap-top eli-keymap-top) (keymap-instant eli-keymap-instant)) eli
     (bind keymap-top "<C-x><C-f>" #'app-set-path)
-    (bind keymap-top  "^" #'app-up)
+    (bind keymap-top  "^" #'app-dir-up)
     (bind keymap-top "<LEFT>" #'app-dir-up)
 					;    (bind keymap-top "<PAGE-DOWN>" #'tester)
-
+    (bind keymap-instant "<UP>" #'app-gtk)
+    (bind keymap-instant "<DOWN>" #'app-gtk)
+    
     (bind keymap-top "<C-0>" #'app-q-0)
     (bind keymap-top "<C-1>" #'app-q-1)
     (bind keymap-top "<C-2>" #'app-q-2)

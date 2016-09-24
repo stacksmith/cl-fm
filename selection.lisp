@@ -4,7 +4,7 @@
   "return t if multiple files selected"
   (let ((count 0))
     (gtk-tree-selection-selected-foreach
-     (gtk-tree-view-get-selection tv)
+     (gtk-tree-view-get-selection (filebox-widget fb))
      (lambda (model path iter)
        (declare (ignore model path iter))
        (incf count)))
