@@ -29,6 +29,7 @@ Start by cloning this repo and gtk-emacs-like-input to a place where quicklisp w
 	(test :dir "...") ;put your test directory here - but be careful and use a scrap dir.
 	
 ## Status
+---
 28-Sept-2016
 
 Added in-place editing of filenames with F2.  As with everything else, no changes are made to the filesystem - file-actions.lisp is just reporting requests. Setting q will write to xattr of the file.
@@ -52,13 +53,13 @@ Double-click is also activate.
 
 Also, drag and drop (except for dragging out, as mentioned elsewhere)
 
-
+---
 23-Sept-2016
 * added color q tagging with `<C-0>` to `<C-5>`. This is an early test, but I've been wanting to color-tag files since early Macintosh days.  It seems there is no file manager that does it, much less one that does it easily.  So, `<C-0>` clears color tagging, and `<C-1>` to `<C-5>` let you set a color between green and red for quality or whatever.  For now, I am just colorizing the size field as color background breaks the stripy splendor of the tree control.  See the screenshot...
 * `<UP>` and `<DOWN>` arrows are bound to eli's instant keymap, with a function that just returns nil so GTK can take over the scrolling.
 * drag and drop is almost ready for action - try dragging files around and see the textual representation of the intended action.  Seems to be correct for copy, move, etc and also outputs file lists.
 
-
+---
 22-Sept-2016...
 Works:
 * Directory navigation by double-clicking directories;
