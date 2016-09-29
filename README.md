@@ -30,6 +30,7 @@ Start by cloning this repo and gtk-emacs-like-input to a place where quicklisp w
 	
 ## Status
 28-Sept-2016
+
 Added in-place editing of filenames with F2.  As with everything else, no changes are made to the filesystem - file-actions.lisp is just reporting requests.
 
 Here is what works:
@@ -40,7 +41,7 @@ Here is what works:
 | `<LEFT>` | Open parent directory |
 | `^` | Open parent directory |
 | `<C-0>` | Set Q to 0 (default) |
-| `<C-1>` | Set Q to 1 (red) |
+|  | Set Q to 1 (red) |
 | `<C-2>` | Set Q to 2  |
 | `<C-3>` | Set Q to 3  |
 | `<C-4>` | Set Q to 4 |
