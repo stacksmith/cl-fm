@@ -42,20 +42,10 @@
 (use-package 'eli)
 (defparameter *fb* nil)
 
-
 (defun app-edit-name (eli)
   "Edit the name of a single selection"
-  (let* ((fb (eli-payload eli))
-	 (tv (filebox-widget fb))
-	 (sel (gtk-tree-view-get-selection tv))
-	 (paths (gtk-tree-selection-get-selected-rows sel))
-	 (renderer *renderer-name*))
-    (when (and paths (null (cdr paths))) ;only for single selection
-      ;; allow editing, start edit and immediately disallow editing to make sure
-      ;; standard treeview activation does not edit.
-      (setf (gtk-cell-renderer-text-editable renderer) t) ;allow editing
-      (gtk-tree-view-set-cursor tv (car paths) :focus-column *column-name* :start-editing t)
-      (setf (gtk-cell-renderer-text-editable renderer) nil))))
+  (name-edit eli)
+  t)
 
 (defun app-set-path (eli)
   (declare (ignore eli))
@@ -64,12 +54,14 @@
 
 (defun  app-dir-up (eli)
   (declare (ignore eli))
-  (filebox-up *fb*))
+  (filebox-up *fb*)
+  t)
 
 (defun app-q (fb num)
   (foreach-selected-row
    fb (lambda (model path iter)
-	(model-set-q model path iter (filebox-path fb) num))))
+	(model-set-q model path iter (filebox-path fb) num)))
+  t)
 
 
 (defun app-q-0 (eli) (app-q (eli:eli-payload eli) 0))
@@ -117,6 +109,7 @@
 				    :vscrollbar-policy :automatic))
 	   (fb (create-filebox dir *window*))
 	   (eli (make-eli *window* fb)))
+      (setf (filebox-eli fb) eli)
       
       (gtk-container-add scrolled (filebox-widget fb ))
       (gtk-box-pack-start contents scrolled)

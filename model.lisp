@@ -23,8 +23,7 @@
   "renders the name of the file or directory/"
   (declare (ignore column))
   (let ((name (uiop:native-namestring (gtk-tree-model-get-value model iterator COL-NAME))))
-    (setf (gtk-cell-renderer-text-text renderer) name))
-  (setf *renderer-name* renderer))
+    (setf (gtk-cell-renderer-text-text renderer) name)))
 
 
 (defun custom-size (column renderer model iterator)

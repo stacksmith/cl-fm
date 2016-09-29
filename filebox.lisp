@@ -42,7 +42,7 @@
 
 (defstruct filebox widget store path window
 	   column-name renderer-name ;for in-place editing of filenames
-	   )
+	   eli)
   
 (defparameter *dragged-onto* nil) 
 
@@ -94,7 +94,7 @@
   "create gtk widget"
   (setf (filebox-widget fb) (make-instance 'gtk-tree-view  :model (filebox-store fb)))
   (with-slots (widget) fb
-    (loop for column in (create-columns) do
+    (loop for column in (create-columns fb) do
 	 (gtk-tree-view-append-column widget column))
     (gtk-tree-view-set-rules-hint widget 1) ;display stripes
 
@@ -111,6 +111,7 @@
     (setf (gtk-widget-can-focus widget) t)
     (setf (gtk-tree-view-enable-search widget) nil); prevent key eating search box
 
+        
     (gdk-threads-add-idle #'(lambda ()
 					;   (format t "IDLE..." )
 					;   (sleep 10)
@@ -121,16 +122,16 @@
 (defun create-filebox (path window)
   (let ((fb (make-filebox :path nil
 			  :store (create-model)
-			  :window window)))
-
+			  :window window
+			  )))
     (create-filebox-widget fb) 
     (drag-and-drop-setup fb)		;see "drag-and-drop.lisp"
 
     (fb-signal-connect (filebox-widget fb) "row-activated" on-row-activated (tv path column))
+    
   
     (filebox-set-path fb path)
 
-
-   
-    fb))
+    (init-name-editing fb) ;see name-editing.lisp
+     fb))
 
