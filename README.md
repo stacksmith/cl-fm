@@ -29,6 +29,28 @@ Start by cloning this repo and gtk-emacs-like-input to a place where quicklisp w
 	(test :dir "...") ;put your test directory here - but be careful and use a scrap dir.
 	
 ## Status
+28-Sept-2016
+Added in-place editing of filenames with F2.  As with everything else, no changes are made to the filesystem - file-actions.lisp is just reporting requests.
+
+Here is what works:
+
+| KEY | BINDING |
+|-----|---------|
+| <F2> | Edit selected file (single selection only) |
+| <LEFT> | Open parent directory |
+| ^ | Open parent directory |
+| <C-0> | Set Q to 0 (default) |
+| <C-1> | Set Q to 1 (red) |
+| <C-2> | Set Q to 2  |
+| <C-3> | Set Q to 3  |
+| <C-4> | Set Q to 4 |
+| <C-5> | Set Q to 5 (default) |
+| <RET> | Activate: for folders, open here; for files, open with external application (for now VLC)
+
+Double-click is also activate.
+
+Also, drag and drop (except for dragging out, as mentioned elsewhere)
+
 
 23-Sept-2016
 * added color q tagging with `<C-0>` to `<C-5>`. This is an early test, but I've been wanting to color-tag files since early Macintosh days.  It seems there is no file manager that does it, much less one that does it easily.  So, `<C-0>` clears color tagging, and `<C-1>` to `<C-5>` let you set a color between green and red for quality or whatever.  For now, I am just colorizing the size field as color background breaks the stripy splendor of the tree control.  See the screenshot...
