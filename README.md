@@ -31,7 +31,7 @@ Start by cloning this repo and gtk-emacs-like-input to a place where quicklisp w
 ## Status
 28-Sept-2016
 
-Added in-place editing of filenames with F2.  As with everything else, no changes are made to the filesystem - file-actions.lisp is just reporting requests.
+Added in-place editing of filenames with F2.  As with everything else, no changes are made to the filesystem - file-actions.lisp is just reporting requests. Setting q will write to xattr of the file.
 
 Here is what works:
 
