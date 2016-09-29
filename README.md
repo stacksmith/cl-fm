@@ -41,7 +41,7 @@ Here is what works:
 | `<LEFT>` | Open parent directory |
 | `^` | Open parent directory |
 | `<C-0>` | Set Q to 0 (default) |
-|  | Set Q to 1 (red) |
+| `<C-1>` | Set Q to 1 (red) |
 | `<C-2>` | Set Q to 2  |
 | `<C-3>` | Set Q to 3  |
 | `<C-4>` | Set Q to 4 |
