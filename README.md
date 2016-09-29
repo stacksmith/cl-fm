@@ -36,16 +36,16 @@ Here is what works:
 
 | KEY | BINDING |
 |-----|---------|
-| <F2> | Edit selected file (single selection only) |
-| <LEFT> | Open parent directory |
-| ^ | Open parent directory |
-| <C-0> | Set Q to 0 (default) |
-| <C-1> | Set Q to 1 (red) |
-| <C-2> | Set Q to 2  |
-| <C-3> | Set Q to 3  |
-| <C-4> | Set Q to 4 |
-| <C-5> | Set Q to 5 (default) |
-| <RET> | Activate: for folders, open here; for files, open with external application (for now VLC)
+| `<F2>` | Edit selected file (single selection only) |
+| `<LEFT>` | Open parent directory |
+| `^` | Open parent directory |
+| `<C-0>` | Set Q to 0 (default) |
+| `<C-1>` | Set Q to 1 (red) |
+| `<C-2>` | Set Q to 2  |
+| `<C-3>` | Set Q to 3  |
+| `<C-4>` | Set Q to 4 |
+| `<C-5>` | Set Q to 5 (default) |
+| `<RET>` | Activate: for folders, open here; for files, open with external application (for now VLC)
 
 Double-click is also activate.
 
