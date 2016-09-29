@@ -40,7 +40,9 @@
   (if (= q #XF) *color-white*
       (elt *color-q*  q )))
 
-(defstruct filebox widget store path window)
+(defstruct filebox widget store path window
+	   column-name renderer-name ;for in-place editing of filenames
+	   )
   
 (defparameter *dragged-onto* nil) 
 
@@ -64,6 +66,7 @@
 
 
 (defun filebox-set-path (fb fpath)
+  "set a new path for this filebox and reload"
   (setf (filebox-path fb) fpath)
   (filebox-reload fb))
 
@@ -77,6 +80,7 @@
 (defun on-row-activated (fb tv path column) ;
   "aka double-click.  Attempt to open file"
   (declare (ignore column))
+  (format t "ACTIVATED")
   (let* ((model (gtk-tree-view-get-model tv))
 	 (iter (gtk-tree-model-get-iter model path))
 	 (fpath (fb-pathname fb (fb-model-value COL-NAME))))
@@ -86,38 +90,40 @@
 	  (external-program:start "vlc" (list fpath)))))) ;TODO: dispatch on filetype
 
 ;;==============================================================================
-(defun create-filebox-widget (model)
+(defun create-filebox-widget (fb)
   "create gtk widget"
-  (let ((view (make-instance 'gtk-tree-view
-			     :model model))) 
+  (setf (filebox-widget fb) (make-instance 'gtk-tree-view  :model (filebox-store fb)))
+  (with-slots (widget) fb
     (loop for column in (create-columns) do
-	 (gtk-tree-view-append-column view column))
-    (gtk-tree-view-set-rules-hint view 1) ;display stripes
-    (gtk-tree-selection-set-mode (gtk-tree-view-get-selection view) :multiple)
-    ;invisible columns
-    (gtk-tree-view-column-set-visible (gtk-tree-view-get-column view COL-ID) nil)
-    (gtk-tree-view-column-set-visible (gtk-tree-view-get-column view COL-DIR) nil)
-    (gtk-tree-view-column-set-visible (gtk-tree-view-get-column view COL-Q) nil)
+	 (gtk-tree-view-append-column widget column))
+    (gtk-tree-view-set-rules-hint widget 1) ;display stripes
+
+    (gtk-tree-selection-set-mode (gtk-tree-view-get-selection widget) :multiple)
+					;invisible columns
+
+    (gtk-tree-view-column-set-visible (gtk-tree-view-get-column widget COL-ID) nil)
+    (gtk-tree-view-column-set-visible (gtk-tree-view-get-column widget COL-DIR) nil)
+    (gtk-tree-view-column-set-visible (gtk-tree-view-get-column widget COL-Q) nil)
     ;;
-    (gtk-tree-view-enable-grid-lines view )
-    (gtk-tree-view-set-reorderable view nil)
-    (setf (gtk-widget-can-focus view) t)
-    (setf (gtk-tree-view-enable-search view) nil); prevent key eating search box
+
+    (gtk-tree-view-enable-grid-lines widget )
+    (gtk-tree-view-set-reorderable widget nil)
+    (setf (gtk-widget-can-focus widget) t)
+    (setf (gtk-tree-view-enable-search widget) nil); prevent key eating search box
+
     (gdk-threads-add-idle #'(lambda ()
-			   ;   (format t "IDLE..." )
-			   ;   (sleep 10)
-			   ;   (format t "IDLE...>~%" )
-			      nil  ))
-    view))
+					;   (format t "IDLE..." )
+					;   (sleep 10)
+					;   (format t "IDLE...>~%" )
+			      nil  ))))
 
 
 (defun create-filebox (path window)
   (let ((fb (make-filebox :path nil
 			  :store (create-model)
 			  :window window)))
-    (setf (filebox-widget fb)
-	  (create-filebox-widget (filebox-store fb))) 
 
+    (create-filebox-widget fb) 
     (drag-and-drop-setup fb)		;see "drag-and-drop.lisp"
 
     (fb-signal-connect (filebox-widget fb) "row-activated" on-row-activated (tv path column))

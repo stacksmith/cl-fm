@@ -43,6 +43,20 @@
 (defparameter *fb* nil)
 
 
+(defun app-edit-name (eli)
+  "Edit the name of a single selection"
+  (let* ((fb (eli-payload eli))
+	 (tv (filebox-widget fb))
+	 (sel (gtk-tree-view-get-selection tv))
+	 (paths (gtk-tree-selection-get-selected-rows sel))
+	 (renderer *renderer-name*))
+    (when (and paths (null (cdr paths))) ;only for single selection
+      ;; allow editing, start edit and immediately disallow editing to make sure
+      ;; standard treeview activation does not edit.
+      (setf (gtk-cell-renderer-text-editable renderer) t) ;allow editing
+      (gtk-tree-view-set-cursor tv (car paths) :focus-column *column-name* :start-editing t)
+      (setf (gtk-cell-renderer-text-editable renderer) nil))))
+
 (defun app-set-path (eli)
   (declare (ignore eli))
   (filebox-set-path *fb* "/home/stacksmith/Downloads/")
@@ -82,6 +96,8 @@
     (bind keymap-top "<C-3>" #'app-q-3)
     (bind keymap-top "<C-4>" #'app-q-4)
     (bind keymap-top "<C-5>" #'app-q-5)
+
+    (bind keymap-top "<F2>" #'app-edit-name)
     ))
 
 (defun  test (&key (dir "/media/stacksmith/DiskA/Trash/") (stdout *standard-output*))

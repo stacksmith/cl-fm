@@ -7,6 +7,7 @@
 (defconstant COL-Q 4)
 (defconstant COL-DIR 5)
 
+
 ;;------------------------------------------------------------------------------
 ;; custom routines - called by renderer to
 ;; render the columns...
@@ -22,7 +23,9 @@
   "renders the name of the file or directory/"
   (declare (ignore column))
   (let ((name (uiop:native-namestring (gtk-tree-model-get-value model iterator COL-NAME))))
-    (setf (gtk-cell-renderer-text-text renderer) name)))
+    (setf (gtk-cell-renderer-text-text renderer) name))
+  (setf *renderer-name* renderer))
+
 
 (defun custom-size (column renderer model iterator)
   "renders the file size.  -1 is unknown (permission issues, etc)"
@@ -43,30 +46,34 @@
 	  (with-output-to-string (str) (print-date str date)))) )
 
 
-(defun create-column (number title &key (custom nil) (align nil) (scale 0.75) (expand nil))
+(defun create-column (fb number title &key (custom nil) (align nil) (scale 0.75) (expand nil))
   "helper - create and return a single column with a text renderer"
-  (let* ((renderer (gtk-cell-renderer-text-new))
-	 (column (gtk-tree-view-column-new-with-attributes title renderer "text" number)))
-   (setf (gtk-cell-renderer-is-expander renderer) t)
-    (setf (gtk-cell-renderer-text-scale-set renderer) t) ;allow text to scale
-    (setf (gtk-cell-renderer-text-scale renderer) scale)   ;scale a little smaller
-    (when align (setf (gtk-cell-renderer-xalign renderer) align)) ;align data within cell
-    (when custom (gtk-tree-view-column-set-cell-data-func ;custom renderer data
-		  column renderer custom))
-    (gtk-tree-view-column-set-sort-column-id column number)
-    (gtk-tree-view-column-set-reorderable column t)
-    (when expand (gtk-tree-view-column-set-expand column t))
-    column))
+  (let ((renderer (gtk-cell-renderer-text-new)))
+    ;(setf (gtk-cell-renderer-text-editable renderer) t)
+    (let ((column (gtk-tree-view-column-new-with-attributes title renderer "text" number)))
+      (setf (gtk-cell-renderer-is-expander renderer) t)
+      (setf (gtk-cell-renderer-text-scale-set renderer) t) ;allow text to scale
+      (setf (gtk-cell-renderer-text-scale renderer) scale)   ;scale a little smaller
+      (when align (setf (gtk-cell-renderer-xalign renderer) align)) ;align data within cell
+      (when custom (gtk-tree-view-column-set-cell-data-func ;custom renderer data
+		    column renderer custom))
+      (gtk-tree-view-column-set-sort-column-id column number)
+      (gtk-tree-view-column-set-reorderable column t)
+      (when expand (gtk-tree-view-column-set-expand column t))
+      (when (= number COL-NAME) ;special handling for name column for editing
+	(setf (filebox-column-name fb) column
+	      (filebox-renderer-name fb) renderer))
+      column)))
 
-(defun create-columns ()
+
+(defun create-columns (fb)
   "create all columns"
-  (list (create-column COL-ID "#" :align 1.0 :custom #'custom-id)
-	(create-column COL-NAME "Filename" :custom #'custom-name :expand t
-		       )
-	(create-column COL-SIZE "Size" :align 1.0 :custom #'custom-size)
-	(create-column COL-DATE "Mod" :custom #'custom-date)
-	(create-column COL-Q    "Q" )
-	(create-column COL-DIR "DIR" :custom #'custom-id)))
+  (list (create-column fb COL-ID "#" :align 1.0 :custom #'custom-id)
+	(create-column fb COL-NAME "Filename" :custom #'custom-name :expand t)
+	(create-column fb COL-SIZE "Size" :align 1.0 :custom #'custom-size)
+	(create-column fb COL-DATE "Mod" :custom #'custom-date)
+	(create-column fb COL-Q    "Q" )
+	(create-column fb COL-DIR "DIR" :custom #'custom-id)))
 
 (defun create-model ()
   (let ((model

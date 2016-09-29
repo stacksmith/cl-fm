@@ -42,6 +42,7 @@
 
 (defun sel->pathstrings (selected fb)
   "convert a dnd selection to a list of pathstrs of files in prefix dir."
+  ;;; Currently, uris are in the form of "file:///...
   (loop for tpath in selected ;selected is a list of tree paths..
      collect (fb-pathname fb (model-path->name (filebox-store fb) tpath))))
 
