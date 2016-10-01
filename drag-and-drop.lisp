@@ -44,7 +44,7 @@
   "convert a dnd selection to a list of pathstrs of files in prefix dir."
   ;;; Currently, uris are in the form of "file:///...
   (loop for tpath in selected ;selected is a list of tree paths..
-     collect (fb-pathname fb (model-path->name (filebox-store fb) tpath))))
+     collect (fb-full-namestring fb (model-path->name (filebox-store fb) tpath))))
 
 ;;; Treeview is bad with dragging multiple selections as clicking to drag will turn off
 ;;; the item clicked on prior to dragging.  We shall disallow the treeview from deselcting

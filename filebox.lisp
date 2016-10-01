@@ -1,7 +1,9 @@
 
 (in-package :cl-fm)
 ;; filebox - a widget containing a list of files
-
+(defstruct filebox widget store path window
+	   column-name renderer-name ;for in-place editing of filenames
+	   eli)
 
 (defun print-date (stream date)
   "Given a universal time date, outputs to a stream."
@@ -12,11 +14,6 @@
 	(format stream "~4,'0d-~2,'0d-~2,'0d" yr mon day))))
  
   
-
-(defun fb-pathname (fb name)
-  "return the path to the named file in this fb"
-  (namestring (uiop:native-namestring
-	       (merge-pathnames name (filebox-path fb)))))
 
 (defmacro fb-model-value (col)
   "get the value from the model, using lexical 'model' & 'iter'"
@@ -40,9 +37,6 @@
   (if (= q #XF) *color-white*
       (elt *color-q*  q )))
 
-(defstruct filebox widget store path window
-	   column-name renderer-name ;for in-place editing of filenames
-	   eli)
   
 (defparameter *dragged-onto* nil) 
 
@@ -60,7 +54,7 @@
       ;;
       (with-slots (path window) fb    
 	(gdk::gdk-window-set-cursor gwin (gdk-cursor-new :watch))
-	(setf (gtk-window-title window) (concatenate 'string "cl-fm  " path))
+	(setf (gtk-window-title window) (concatenate 'string "cl-fm  " (namestring path)))
 	;; low priority seems to be necessary for the cursor to change
 	(g-idle-add #'refill-prim :priority glib:+g-priority-low+)))))
 
@@ -83,7 +77,7 @@
   (format t "ACTIVATED")
   (let* ((model (gtk-tree-view-get-model tv))
 	 (iter (gtk-tree-model-get-iter model path))
-	 (fpath (fb-pathname fb (fb-model-value COL-NAME))))
+	 (fpath (fb-full-namestring fb (fb-model-value COL-NAME))))
     (when (= (fb-selected-count fb) 1)
       (if (= 1 (fb-model-value COL-DIR))
 	  (filebox-set-path fb fpath)

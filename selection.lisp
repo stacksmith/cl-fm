@@ -18,7 +18,7 @@
    (gtk-tree-view-get-selection (filebox-widget fb))
    (lambda (model path iter)
      (declare (ignore path))
-     (funcall func (fb-pathname fb (fb-model-value COL-NAME))))))
+     (funcall func (fb-full-namestring fb (fb-model-value COL-NAME))))))
 
 #|
   (let ((count 0))

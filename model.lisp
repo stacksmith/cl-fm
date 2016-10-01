@@ -84,23 +84,24 @@
     (g-signal-connect model "row-changed" #'on-row-changed)
     model))
 
-(defun model-append-initial-dir (store i file-name)
+(defun model-append-initial-dir (store i path-base path-name)
   "append an initial directory entry"
   (gtk-tree-store-set
    store
    (gtk-tree-store-append store nil) ;iter
    i          ;ID
-   (concatenate 'string (car (last (pathname-directory file-name))) "/");;TODO: portability
+   (enough-namestring path-name path-base)
+;   (concatenate 'string (car (last (pathname-directory file-name))) "/");;TODO: portability
    -1         ;SIZE
    0          ;DATE
    #xf        ;Q
    1))
 
-(defun model-append-initial-file (store i file-name)
+(defun model-append-initial-file (store i path-name)
   (gtk-tree-store-set
    store (gtk-tree-store-append store nil)
    i          ;ID
-   (file-namestring file-name ) ;NAME
+   (file-namestring path-name ) ;NAME
    -1         ;SIZE
    0          ;DATE
    #xf        ;Q
@@ -113,14 +114,14 @@
 ;  (format t "I: ~A~%" (uiop:subdirectories path))
   (let ((i 1))
     (and include-dirs
-	 (loop for file-name in (uiop:subdirectories path); (cl-fad:list-directory path)
+	 (loop for subdir-path in (uiop:subdirectories path); (cl-fad:list-directory path)
 	    do
-	      (model-append-initial-dir store i file-name)
+	      (model-append-initial-dir store i path subdir-path)
 	      (incf i)))
     
-    (loop for file-name in (uiop:directory-files path); (cl-fad:list-directory path)
+    (loop for file-path in (uiop:directory-files path); (cl-fad:list-directory path)
        do
-	 (model-append-initial-file store i file-name)
+	 (model-append-initial-file store i file-path)
 	 (incf i))))
 
 (defun model-postprocess (store directory)
