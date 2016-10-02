@@ -57,7 +57,7 @@ Added a rudimentary in-place renamer.  It works, but due to internal issues with
 | `<C-5>` | Set Q to 5 (default) |
 | `<RET>` | Activate: for folders, open here; for files, open with external application (for now VLC)
 
-
+ 
 
 ---
 28-Sept-2016
