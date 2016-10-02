@@ -88,35 +88,7 @@
 	  (external-program:start "vlc" (list fpath)))))) ;TODO: dispatch on filetype
 
 ;;==============================================================================
-(defun create-filebox-widget (fb)
-  "create gtk widget"
-  (setf (filebox-widget fb) (make-instance 'gtk-tree-view  :model (filebox-store fb)))
-  (with-slots (widget selection) fb
-    (loop for column in (create-columns fb) do
-	 (gtk-tree-view-append-column widget column))
-    (gtk-tree-view-set-rules-hint widget 1) ;display stripes
-    ;; selection
-    (setf selection (gtk-tree-view-get-selection widget))
-    (gtk-tree-selection-set-mode selection :multiple)
-   ; (fb-signal-connect selection "changed" on-selection-changed (selection))
 
-    ;;invisible columns
-    (gtk-tree-view-column-set-visible (gtk-tree-view-get-column widget COL-ID) nil)
-    (gtk-tree-view-column-set-visible (gtk-tree-view-get-column widget COL-DIR) nil)
-    (gtk-tree-view-column-set-visible (gtk-tree-view-get-column widget COL-Q) nil)
-    ;;
-
-    (gtk-tree-view-enable-grid-lines widget )
-    (gtk-tree-view-set-reorderable widget nil)
-    (setf (gtk-widget-can-focus widget) t)
-    (setf (gtk-tree-view-enable-search widget) nil); prevent key eating search box
-
-        
-    (gdk-threads-add-idle #'(lambda ()
-					;   (format t "IDLE..." )
-					;   (sleep 10)
-					;   (format t "IDLE...>~%" )
-			      nil  ))))
 
 
 (defun create-filebox (path window)
@@ -124,14 +96,20 @@
 			  :store (create-model)
 			  :window window
 			  )))
-    (create-filebox-widget fb) 
-    (drag-and-drop-setup fb)		;see "drag-and-drop.lisp"
+    (with-slots (widget selection) fb
+      (setf widget (create-filebox-widget fb)) 
+      ;; selection
+      (setf selection (gtk-tree-view-get-selection widget))
+      (gtk-tree-selection-set-mode selection :multiple)
 
-    (fb-signal-connect (filebox-widget fb) "row-activated" on-row-activated (tv path column))
-    
-  
-    (filebox-set-path fb path)
 
-    (init-name-editing fb) ;see name-editing.lisp
-     fb))
+      (drag-and-drop-setup fb)		;see "drag-and-drop.lisp"
+
+      (fb-signal-connect (filebox-widget fb) "row-activated" on-row-activated (tv path column))
+      
+      
+      (filebox-set-path fb path)
+
+      (init-name-editing fb) ;see name-editing.lisp
+      fb)))
 

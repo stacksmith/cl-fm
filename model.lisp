@@ -6,79 +6,17 @@
 (defconstant COL-DATE 3)
 (defconstant COL-Q 4)
 (defconstant COL-DIR 5)
+(defconstant COL-ICON 6)
 
 
-;;------------------------------------------------------------------------------
-;; custom routines - called by renderer to
-;; render the columns...
-;;
-
-(defun custom-id (column renderer model iterator)
-  "renders the id column, seq row number"
-  (declare (ignore column model iterator))
-  (setf (gtk-cell-renderer-text-background-gdk renderer)
-	(make-gdk-color :red 65000 :green 0 :blue 0) ) )
-
-(defun custom-name (column renderer model iterator)
-  "renders the name of the file or directory/"
-  (declare (ignore column))
-  (let ((name (uiop:native-namestring (gtk-tree-model-get-value model iterator COL-NAME))))
-    (setf (gtk-cell-renderer-text-text renderer) name)))
-
-
-(defun custom-size (column renderer model iterator)
-  "renders the file size.  -1 is unknown (permission issues, etc)"
-  (declare (ignore column))
-  (let ((size  (gtk-tree-model-get-value model iterator COL-SIZE))
-	(q (gtk-tree-model-get-value model iterator COL-Q)))
-    (setf (gtk-cell-renderer-text-background-gdk renderer) (q-color q)
-	  (gtk-cell-renderer-text-text renderer)
-	  (if (= size -1)
-		 (format nil "Unknown")
-		 (format nil "~:d" size)))))
-
-(defun custom-date (column renderer model iterator)
-  "rernder mod date in yr-mo-da format"
-  (declare (ignore column))
-  (let ((date (first (gtk-tree-model-get model iterator COL-DATE))))
-    (setf (gtk-cell-renderer-text-text renderer)
-	  (with-output-to-string (str) (print-date str date)))) )
-
-
-(defun create-column (fb number title &key (custom nil) (align nil) (scale 0.75) (expand nil))
-  "helper - create and return a single column with a text renderer"
-  (let ((renderer (gtk-cell-renderer-text-new)))
-    ;(setf (gtk-cell-renderer-text-editable renderer) t)
-    (let ((column (gtk-tree-view-column-new-with-attributes title renderer "text" number)))
-      (setf (gtk-cell-renderer-is-expander renderer) t)
-      (setf (gtk-cell-renderer-text-scale-set renderer) t) ;allow text to scale
-      (setf (gtk-cell-renderer-text-scale renderer) scale)   ;scale a little smaller
-      (when align (setf (gtk-cell-renderer-xalign renderer) align)) ;align data within cell
-      (when custom (gtk-tree-view-column-set-cell-data-func ;custom renderer data
-		    column renderer custom))
-      (gtk-tree-view-column-set-sort-column-id column number)
-      (gtk-tree-view-column-set-reorderable column t)
-      (when expand (gtk-tree-view-column-set-expand column t))
-      (when (= number COL-NAME) ;special handling for name column for editing
-	(setf (filebox-column-name fb) column
-	      (filebox-renderer-name fb) renderer))
-      column)))
-
-
-(defun create-columns (fb)
-  "create all columns"
-  (list (create-column fb COL-ID "#" :align 1.0 :custom #'custom-id)
-	(create-column fb COL-NAME "Filename" :custom #'custom-name :expand t)
-	(create-column fb COL-SIZE "Size" :align 1.0 :custom #'custom-size)
-	(create-column fb COL-DATE "Mod" :custom #'custom-date)
-	(create-column fb COL-Q    "Q" )
-	(create-column fb COL-DIR "DIR" :custom #'custom-id)))
+(defparameter *icon-folder* (gdk-pixbuf-new-from-file (namestring (asdf:system-relative-pathname
+								'cl-fm "resources/icon-folder.png"))))
 
 (defun create-model ()
   (let ((model
 	 (make-instance 'gtk-tree-store
-			              ;;; ID        NAME       SIZE    DATE    Q      DIR
-			:column-types '("guint" "gchararray" "gint64" "guint" "guint" "guint"))))
+			              ;;; ID        NAME       SIZE    DATE    Q      DIR     ICON
+			:column-types '("guint" "gchararray" "gint64" "guint" "guint" "guint" "GdkPixbuf"))))
     (g-signal-connect model "row-deleted" #'on-row-deleted)
     (g-signal-connect model "row-inserted" #'on-row-inserted)
     (g-signal-connect model "row-changed" #'on-row-changed)
@@ -95,7 +33,8 @@
    -1         ;SIZE
    0          ;DATE
    #xf        ;Q
-   1))
+   1
+   *icon-folder*))
 
 (defun model-append-initial-file (store i path-name)
   (gtk-tree-store-set
@@ -105,7 +44,8 @@
    -1         ;SIZE
    0          ;DATE
    #xf        ;Q
-   0))
+   0
+   ))
 
 (defun model-refill (store path &key (include-dirs t))
   "clear gtk store and reload store with data from filesystem"
@@ -145,7 +85,8 @@
 
        (gtk-tree-store-set-value model iter COL-SIZE size)
        (gtk-tree-store-set-value model iter COL-DATE date)
-       (gtk-tree-store-set-value model iter COL-Q q))
+       (gtk-tree-store-set-value model iter COL-Q q)
+      )
      nil))) ;continue walk
 
 
