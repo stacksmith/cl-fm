@@ -11,6 +11,12 @@
     ((string= action "RENAME") (format t "RENAME ~A ~A"  arg1 arg2))
     ))
 
-(defun action-rename-one (src dst)
-  
-  (rename-file src dst))
+;; TODO: error protect
+(defun action-rename-one (fb src dst)
+  "rename one file or dir.  Do not end in slash for now."
+  (with-slots (path) fb
+    (unless (uiop:directory-pathname-p dst)
+      (let ((psrc (merge-pathnames src path))
+	    (pdst (merge-pathnames dst path))))
+      (format t "ACTION-RENAME-ONE: from [~A] to [~A]~%" psrc pdst)
+      (rename-file psrc pdst))))

@@ -29,6 +29,30 @@ Start by cloning this repo and gtk-emacs-like-input to a place where quicklisp w
 	(test :dir "...") ;put your test directory here - but be careful and use a scrap dir.
 	
 ## Status
+
+01-Oct-2016
+
+Added `<F5>` reload binding.
+
+Added a rudimentary in-place renamer.  It works, but due to internal issues with directory names ending with a slash, directory renaming is wacky.  It works only when no final slash is added in edit, and F5 must be pressed afterwards.  I will rework internal storage issues tomorrow.
+
+
+| KEY | BINDING |
+|-----|---------|
+| `<F2>` | Edit selected file (single selection only) |
+| `<F5>` | Reload current directory |
+| `<LEFT>` | Open parent directory |
+| `^` | Open parent directory |
+| `<C-0>` | Set Q to 0 (default) |
+| `<C-1>` | Set Q to 1 (red) |
+| `<C-2>` | Set Q to 2  |
+| `<C-3>` | Set Q to 3  |
+| `<C-4>` | Set Q to 4 |
+| `<C-5>` | Set Q to 5 (default) |
+| `<RET>` | Activate: for folders, open here; for files, open with external application (for now VLC)
+
+
+
 ---
 28-Sept-2016
 

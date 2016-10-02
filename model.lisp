@@ -158,6 +158,12 @@
   (gtk-tree-store-set-value model iterator COL-Q value)
 ;  (gtk-tree-model-row-changed model path iterator )
   )
+(defun model-set-name (model treepath value)
+  (gtk-tree-store-set-value
+   model
+   (gtk-tree-model-get-iter model treepath)
+   COL-NAME
+   value))
 
 (defun on-row-changed (model tp iter)
   (declare (ignore tp))

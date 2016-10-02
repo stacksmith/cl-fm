@@ -42,6 +42,9 @@
 (use-package 'eli)
 (defparameter *fb* nil)
 
+(defun app-reload (eli)
+  (filebox-reload (eli-payload eli)))
+
 (defun app-edit-name (eli)
   "Edit the name of a single selection"
   (name-edit eli)
@@ -90,6 +93,8 @@
     (bind keymap-top "<C-5>" #'app-q-5)
 
     (bind keymap-top "<F2>" #'app-edit-name)
+    (bind keymap-top "<F5>" #'app-reload)
+    
     ))
 
 (defun  test (&key (dir #p"/media/stacksmith/DiskA/Trash/") (stdout *standard-output*))

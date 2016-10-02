@@ -2,12 +2,13 @@
 
 (defun on-edited (fb renderer path new-text)
   (declare (ignore renderer path))
-  ;; cl-cffi-gtk bug: path is bad
-    
-  (format t "EDITED: from [~A] to [~A]~%" (car (fb-selected-paths fb))
-	  (fb-merge-path fb new-text))
-  (format t "FILEBOX-PATH ~A~%" (filebox-path fb))
-  (eli::suspend (filebox-eli fb) nil))		;re-enable eli
+  (with-slots (store eli selection) fb
+    ;; cl-cffi-gtk bug: path is bad
+    (let* ((treepath (car (gtk-tree-selection-get-selected-rows selection)))
+	   (old (model-path->name store treepath)))
+      (action-rename-one fb old new-text)
+      (model-set-name store treepath new-text)
+      (eli::suspend eli nil))))		;re-enable eli
   
 
 (defun on-editing-started (fb renderer editable path)
