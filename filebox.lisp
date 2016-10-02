@@ -7,7 +7,8 @@
 
 (defun fb-full-namestring (fb pathname)
   "return the namestring to the named file in this fb"
-  (uiop:native-namestring (merge-pathnames pathname (filebox-path fb))))
+  (uiop:native-namestring
+   (truename (merge-pathnames pathname (filebox-path fb)))))
 
 (defun print-date (stream date)
   "Given a universal time date, outputs to a stream."
@@ -78,10 +79,11 @@
 (defun on-row-activated (fb tv path column) ;
   "aka double-click.  Attempt to open file"
   (declare (ignore column))
-  (format t "ACTIVATED")
   (let* ((model (gtk-tree-view-get-model tv))
 	 (iter (gtk-tree-model-get-iter model path))
 	 (fpath (fb-full-namestring fb (fb-model-value COL-NAME))))
+    (format t "ACTIVATED [~A]~%" fpath)
+
     (when (= (fb-selected-count fb) 1)
       (if (= 1 (fb-model-value COL-DIR))
 	  (filebox-set-path fb fpath)

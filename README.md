@@ -30,6 +30,12 @@ Start by cloning this repo and gtk-emacs-like-input to a place where quicklisp w
 	
 ## Status
 
+02-Oct-2016
+
+Made some fixes with handling of filenames.  It's still a mess and should be moved to a separate file, perhaps.  But for now it works.  The root directory is kept as a namestring (truename), so the final slash is there.  Filenames are kept in the model, and therefore have to be namestrings.  There are a few places that merge and manipulate names (activation, going up in hierarchy, etc).
+
+Added folder icons and removed final slash in folder names in model - truename does the trick.
+
 01-Oct-2016
 
 Added `<F5>` reload binding.
