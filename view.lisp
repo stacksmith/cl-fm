@@ -58,9 +58,32 @@
       (when (= number COL-NAME) ;special handling for name column for editing
 	(setf (filebox-column-name fb) column
 	      (filebox-renderer-name fb) renderer))
-      (when (= number COL-ICON)
-	)
       column)))
+
+(defun create-column-name (fb number title &key (custom nil) (align nil) (scale 0.75) (expand nil))
+  "helper - create the name column"
+  (let ((column (gtk-tree-view-column-new)))
+    (gtk-tree-view-column-set-title column title)
+    (let ((renderer-icon (gtk-cell-renderer-pixbuf-new)))
+      (gtk-tree-view-column-pack-start column renderer-icon :expand nil)
+      (gtk-tree-view-column-set-attributes column renderer-icon "pixbuf" COL-ICON))
+    (let ((renderer (gtk-cell-renderer-text-new)))
+      (setf (gtk-cell-renderer-text-scale-set renderer) t) ;allow text to scale
+      (setf (gtk-cell-renderer-text-scale renderer) scale)   ;scale a little smaller
+      (when align (setf (gtk-cell-renderer-xalign renderer) align)) ;align data within cell
+      (when custom (gtk-tree-view-column-set-cell-data-func ;custom renderer data
+		    column renderer custom))
+      (gtk-tree-view-column-pack-start column renderer :expand nil)
+      (gtk-tree-view-column-set-attributes column renderer "text" COL-NAME)
+     
+      (gtk-tree-view-column-set-sort-column-id column number)
+      (gtk-tree-view-column-set-reorderable column t)
+      ;;special handling for name column for editing
+      (setf (filebox-column-name fb) column
+	    (filebox-renderer-name fb) renderer))
+    column))
+  
+
 
 (defun create-column-icon (fb number title &key (custom nil) (align nil) (scale 0.75) )
   "helper - create and return a single column with a text renderer"
@@ -72,7 +95,7 @@
 (defun create-columns (fb)
   "return a list of newly-created columns"
   (list (create-column fb COL-ID "#" :align 1.0 :custom #'custom-id)
-	(create-column fb COL-NAME "Filename" :custom #'custom-name :expand t)
+	(create-column-name fb COL-NAME "Filename" :custom #'custom-name :expand t)
 	(create-column fb COL-SIZE "Size" :align 1.0 :custom #'custom-size)
 	(create-column fb COL-DATE "Mod" :custom #'custom-date)
 	(create-column fb COL-Q    "Q" )
@@ -90,6 +113,7 @@
     (gtk-tree-view-column-set-visible (gtk-tree-view-get-column widget COL-ID) nil)
     (gtk-tree-view-column-set-visible (gtk-tree-view-get-column widget COL-DIR) nil)
     (gtk-tree-view-column-set-visible (gtk-tree-view-get-column widget COL-Q) nil)
+    (gtk-tree-view-column-set-visible (gtk-tree-view-get-column widget COL-ICON) nil)
       ;;
     (gtk-tree-view-enable-grid-lines widget )
     (gtk-tree-view-set-reorderable widget nil)
