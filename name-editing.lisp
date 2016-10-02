@@ -1,10 +1,14 @@
 (in-package :cl-fm)
 
 (defun on-edited (fb renderer path new-text)
-  (format t "EDITED: ~A~%" new-text)
-  (eli::suspend (filebox-eli fb) nil)		;re-enable eli
-  (file-action "RENAME" new-text) ;bogus
-  )
+  (declare (ignore renderer path))
+  ;; cl-cffi-gtk bug: path is bad
+    
+  (format t "EDITED: from [~A] to [~A]~%" (car (fb-selected-paths fb))
+	  (fb-merge-path fb new-text))
+  (format t "FILEBOX-PATH ~A~%" (filebox-path fb))
+  (eli::suspend (filebox-eli fb) nil))		;re-enable eli
+  
 
 (defun on-editing-started (fb renderer editable path)
   )
@@ -31,6 +35,10 @@
     (when (and paths (null (cdr paths))) ;only for single selection
       ;; allow editing, start edit and immediately disallow editing to make sure
       ;; standard treeview activation does not edit.
+   (format t "EDITING: from [~A] ~%"
+					;(model-path->name (filebox-store fb) path)
+	   (car paths)
+	  )    
       (eli::suspend eli t) ;resumed in on-edited and on-editing-canceled
       (setf (gtk-cell-renderer-text-editable renderer) t) ;allow editing
       (gtk-tree-view-set-cursor tv (car paths) :focus-column (filebox-column-name fb) :start-editing t)

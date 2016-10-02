@@ -92,7 +92,7 @@
     (bind keymap-top "<F2>" #'app-edit-name)
     ))
 
-(defun  test (&key (dir "/media/stacksmith/DiskA/Trash/") (stdout *standard-output*))
+(defun  test (&key (dir #p"/media/stacksmith/DiskA/Trash/") (stdout *standard-output*))
   
   (within-main-loop
     (setf *standard-output* stdout) ;enable output in this thread

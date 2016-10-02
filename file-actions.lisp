@@ -2,11 +2,15 @@
 
 
 
-(defun file-action (action files)
+(defun file-action (action arg1 arg2)
   (cond
-    ((string= action "COPY") (format t "COPY ~A" files))
-    ((string= action "MOVE") (format t "MOVE ~A" files))
-    ((string= action "LINK") (format t "LINK ~A" files))
-    ((string= action "ASK" ) (format t "ASK  ~A" files))
-    ((string= action "RENAME") (format t "RENAME ~A" files))
+    ((string= action "COPY") (format t "COPY ~A ~A" arg1 arg2))
+    ((string= action "MOVE") (format t "MOVE ~A ~A"  arg1 arg2))
+    ((string= action "LINK") (format t "LINK ~A ~A"  arg1 arg2))
+    ((string= action "ASK" ) (format t "ASK  ~A ~A"  arg1 arg2))
+    ((string= action "RENAME") (format t "RENAME ~A ~A"  arg1 arg2))
     ))
+
+(defun action-rename-one (src dst)
+  
+  (rename-file src dst))

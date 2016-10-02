@@ -13,6 +13,7 @@
   :components ((:file "package")
 	       (:file "cl-cffi-gtk-fixes")
 	       (:file "util")
+	       (:file "fb-util")
 	       (:file "xattr")
 	       (:file "file-actions")
 	       (:file "model")

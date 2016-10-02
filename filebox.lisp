@@ -3,7 +3,11 @@
 ;; filebox - a widget containing a list of files
 (defstruct filebox widget store path window
 	   column-name renderer-name ;for in-place editing of filenames
-	   eli)
+	   eli selection)
+
+(defun fb-full-namestring (fb pathname)
+  "return the namestring to the named file in this fb"
+  (uiop:native-namestring (merge-pathnames pathname (filebox-path fb))))
 
 (defun print-date (stream date)
   "Given a universal time date, outputs to a stream."
@@ -87,14 +91,16 @@
 (defun create-filebox-widget (fb)
   "create gtk widget"
   (setf (filebox-widget fb) (make-instance 'gtk-tree-view  :model (filebox-store fb)))
-  (with-slots (widget) fb
+  (with-slots (widget selection) fb
     (loop for column in (create-columns fb) do
 	 (gtk-tree-view-append-column widget column))
     (gtk-tree-view-set-rules-hint widget 1) ;display stripes
+    ;; selection
+    (setf selection (gtk-tree-view-get-selection widget))
+    (gtk-tree-selection-set-mode selection :multiple)
+   ; (fb-signal-connect selection "changed" on-selection-changed (selection))
 
-    (gtk-tree-selection-set-mode (gtk-tree-view-get-selection widget) :multiple)
-					;invisible columns
-
+    ;;invisible columns
     (gtk-tree-view-column-set-visible (gtk-tree-view-get-column widget COL-ID) nil)
     (gtk-tree-view-column-set-visible (gtk-tree-view-get-column widget COL-DIR) nil)
     (gtk-tree-view-column-set-visible (gtk-tree-view-get-column widget COL-Q) nil)

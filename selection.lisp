@@ -20,6 +20,11 @@
      (declare (ignore path))
      (funcall func (fb-full-namestring fb (fb-model-value COL-NAME))))))
 
+
+#|(defun on-selection-changed (fb selection)
+  (format t "SELECTION CHANGED ~A~%" selection)
+  )
+|#
 #|
   (let ((count 0))
     (gtk-tree-selection-selected-foreach
