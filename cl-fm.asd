@@ -16,7 +16,7 @@
 	       (:file "fb-util")
 	       (:file "xattr")
 	       (:file "file-actions")
-	       (:dilw "view")
+	       (:file "view")
 	       (:file "model")
 	       (:file "drag-and-drop")
 	       (:file "selection")
