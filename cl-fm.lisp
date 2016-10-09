@@ -97,7 +97,7 @@
     
     ))
 
-(defun  test (&key (dir #p"/media/stacksmith/DiskA/Trash/") (stdout *standard-output*))
+(defun  test (&key (dir #p"/media/stack/DiskA/Trash/") (stdout *standard-output*))
   
   (within-main-loop
     (setf *standard-output* stdout) ;enable output in this thread
@@ -116,8 +116,8 @@
 	   (eli (make-eli *window* fb)))
       (setf (filebox-eli fb) eli)
       
-      (gtk-container-add scrolled (filebox-widget fb ))
       (gtk-box-pack-start contents scrolled)
+      (gtk-container-add scrolled (filebox-widget fb ))
       (gtk-box-pack-end contents (eli-bar eli) :expand nil)
       (setf *fb* fb)
       (gtk-container-add *window* contents)
@@ -128,7 +128,8 @@
 			  (leave-gtk-main)))
       (bind-keys eli)
       (gtk-widget-show-all *window*)
-      
+
+;      (gtk-tree-view-columns-autosize (filebox-widget fb))
       (reset eli :full t))
     
     

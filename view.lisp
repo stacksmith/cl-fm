@@ -13,8 +13,11 @@
 (defun custom-name (column renderer model iterator)
   "renders the name of the file or directory/"
   (declare (ignore column))
-  (let ((name (uiop:native-namestring (gtk-tree-model-get-value model iterator COL-NAME))))
-    (setf (gtk-cell-renderer-text-text renderer) name)))
+  (let ((name (uiop:native-namestring (gtk-tree-model-get-value model iterator COL-NAME)))
+	(q (gtk-tree-model-get-value model iterator COL-Q)))
+    (setf (gtk-cell-renderer-text-background-gdk renderer) (q-color q)
+	  (gtk-cell-renderer-text-text renderer)
+	  name)))
 
 
 (defun custom-size (column renderer model iterator)
@@ -35,12 +38,6 @@
     (setf (gtk-cell-renderer-text-text renderer)
 	  (with-output-to-string (str) (print-date str date)))) )
 
-
-
-
-
-
-
 (defun create-column (fb number title &key (custom nil) (align nil) (scale 0.75) (expand nil))
   "helper - create and return a single column with a text renderer"
   (let ((renderer (gtk-cell-renderer-text-new)))
@@ -52,15 +49,16 @@
       (when align (setf (gtk-cell-renderer-xalign renderer) align)) ;align data within cell
       (when custom (gtk-tree-view-column-set-cell-data-func ;custom renderer data
 		    column renderer custom))
+      (gtk-tree-view-column-set-sizing column :autosize)
       (gtk-tree-view-column-set-sort-column-id column number)
       (gtk-tree-view-column-set-reorderable column t)
-      (when expand (gtk-tree-view-column-set-expand column t))
+      (when expand (gtk-tree-view-column-set-expand column expand))
       (when (= number COL-NAME) ;special handling for name column for editing
 	(setf (filebox-column-name fb) column
 	      (filebox-renderer-name fb) renderer))
       column)))
 
-(defun create-column-name (fb number title &key (custom nil) (align nil) (scale 0.75) (expand nil))
+(defun create-column-name (fb number title &key (custom nil) (align nil) (scale 0.9) (expand nil))
   "helper - create the name column"
   (let ((column (gtk-tree-view-column-new)))
     (gtk-tree-view-column-set-title column title)
@@ -73,14 +71,15 @@
       (when align (setf (gtk-cell-renderer-xalign renderer) align)) ;align data within cell
       (when custom (gtk-tree-view-column-set-cell-data-func ;custom renderer data
 		    column renderer custom))
-      (gtk-tree-view-column-pack-start column renderer :expand nil)
       (gtk-tree-view-column-set-attributes column renderer "text" COL-NAME)
-     
-      (gtk-tree-view-column-set-sort-column-id column number)
+      (gtk-tree-view-column-set-sizing column :autosize)
       (gtk-tree-view-column-set-reorderable column t)
+      (gtk-tree-view-column-set-resizable column t)
+      (gtk-tree-view-column-set-sort-column-id column number)
       ;;special handling for name column for editing
       (setf (filebox-column-name fb) column
-	    (filebox-renderer-name fb) renderer))
+	    (filebox-renderer-name fb) renderer)
+      (gtk-tree-view-column-pack-start column renderer :expand expand))
     column))
   
 
@@ -107,6 +106,7 @@
   (let ((widget (make-instance 'gtk-tree-view  :model (filebox-store fb))))
     (loop for column in (create-columns fb) do
 	 (gtk-tree-view-append-column widget column))
+    
     (gtk-tree-view-set-rules-hint widget 1) ;display stripes
       					; (fb-signal-connect selection "changed" on-selection-changed (selection))
       ;;invisible columns
