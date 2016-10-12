@@ -38,48 +38,56 @@
     (setf (gtk-cell-renderer-text-text renderer)
 	  (with-output-to-string (str) (print-date str date)))) )
 
-(defun create-column (fb number title &key (custom nil) (align nil) (scale 0.75) (expand nil))
+(defun create-column (fb number title &key (custom nil) (align nil) (scale 0.75))
   "helper - create and return a single column with a text renderer"
   (let ((renderer (gtk-cell-renderer-text-new)))
     ;(setf (gtk-cell-renderer-text-editable renderer) t)
-    (let ((column (gtk-tree-view-column-new-with-attributes title renderer "text" number)))
+    (let ((column (gtv-column-new-with-attributes title renderer "text" number)))
       (setf (gtk-cell-renderer-is-expander renderer) t)
       (setf (gtk-cell-renderer-text-scale-set renderer) t) ;allow text to scale
       (setf (gtk-cell-renderer-text-scale renderer) scale)   ;scale a little smaller
       (when align (setf (gtk-cell-renderer-xalign renderer) align)) ;align data within cell
-      (when custom (gtk-tree-view-column-set-cell-data-func ;custom renderer data
+      (when custom (gtv-column-set-cell-data-func ;custom renderer data
 		    column renderer custom))
-      (gtk-tree-view-column-set-sizing column :autosize)
-      (gtk-tree-view-column-set-sort-column-id column number)
-      (gtk-tree-view-column-set-reorderable column t)
-      (when expand (gtk-tree-view-column-set-expand column expand))
-      (when (= number COL-NAME) ;special handling for name column for editing
-	(setf (filebox-column-name fb) column
-	      (filebox-renderer-name fb) renderer))
+      
+
+      (gtv-column-set-sizing column :fixed)
+      (gtv-column-set-expand column nil)
+      (gtv-column-set-resizable column nil)
+      
+      (gtv-column-set-sort-column-id column number)
+      (gtv-column-set-reorderable column t)
+      
+
       column)))
 
-(defun create-column-name (fb number title &key (custom nil) (align nil) (scale 0.9) (expand nil))
+(defun create-column-name (fb number title &key (custom nil) (align nil) (scale 0.9) )
   "helper - create the name column"
-  (let ((column (gtk-tree-view-column-new)))
-    (gtk-tree-view-column-set-title column title)
+  (let ((column (gtv-column-new)))
+    (gtv-column-set-title column title)
     (let ((renderer-icon (gtk-cell-renderer-pixbuf-new)))
-      (gtk-tree-view-column-pack-start column renderer-icon :expand nil)
-      (gtk-tree-view-column-set-attributes column renderer-icon "pixbuf" COL-ICON))
+      (gtv-column-pack-start column renderer-icon :expand nil)
+      (gtv-column-set-attributes column renderer-icon "pixbuf" COL-ICON))
     (let ((renderer (gtk-cell-renderer-text-new)))
-      (setf (gtk-cell-renderer-text-scale-set renderer) t) ;allow text to scale
-      (setf (gtk-cell-renderer-text-scale renderer) scale)   ;scale a little smaller
+      (setf (gtk-cell-renderer-text-scale-set renderer) t ;allow text to scale
+	    (gtk-cell-renderer-text-scale renderer) scale)   ;scale a little smaller
       (when align (setf (gtk-cell-renderer-xalign renderer) align)) ;align data within cell
-      (when custom (gtk-tree-view-column-set-cell-data-func ;custom renderer data
+      (when custom (gtv-column-set-cell-data-func ;custom renderer data
 		    column renderer custom))
-      (gtk-tree-view-column-set-attributes column renderer "text" COL-NAME)
-      (gtk-tree-view-column-set-sizing column :autosize)
-      (gtk-tree-view-column-set-reorderable column t)
-      (gtk-tree-view-column-set-resizable column t)
-      (gtk-tree-view-column-set-sort-column-id column number)
+      (gtv-column-set-attributes column renderer "text" COL-NAME)
+      
+      (gtv-column-set-reorderable column t)
+      
+      (gtv-column-set-sizing column :fixed)
+      (gtv-column-set-expand column nil)
+      (gtv-column-set-resizable column t)
+
+      (gtv-column-set-sort-column-id column number)
       ;;special handling for name column for editing
       (setf (filebox-column-name fb) column
 	    (filebox-renderer-name fb) renderer)
-      (gtk-tree-view-column-pack-start column renderer :expand expand))
+      ;; pack renderer
+      (gtv-column-pack-start column renderer :expand nil))
     column))
   
 
@@ -88,13 +96,13 @@
   "helper - create and return a single column with a text renderer"
   (let ((renderer (gtk-cell-renderer-pixbuf-new)))
     ;(setf (gtk-cell-renderer-text-editable renderer) t)
-    (let ((column (gtk-tree-view-column-new-with-attributes title renderer "pixbuf" COL-ICON  )))
+    (let ((column (gtv-column-new-with-attributes title renderer "pixbuf" COL-ICON  )))
       column)))
 
 (defun create-columns (fb)
   "return a list of newly-created columns"
   (list (create-column fb COL-ID "#" :align 1.0 :custom #'custom-id)
-	(create-column-name fb COL-NAME "Filename" :custom #'custom-name :expand t)
+	(create-column-name fb COL-NAME "Filename" :custom #'custom-name )
 	(create-column fb COL-SIZE "Size" :align 1.0 :custom #'custom-size)
 	(create-column fb COL-DATE "Mod" :custom #'custom-date)
 	(create-column fb COL-Q    "Q" )
@@ -105,22 +113,23 @@
   "create gtk widget"
   (let ((widget (make-instance 'gtk-tree-view  :model (filebox-store fb))))
     (loop for column in (create-columns fb) do
-	 (gtk-tree-view-append-column widget column))
+	 (gtv-append-column widget column))
     
-    (gtk-tree-view-set-rules-hint widget 1) ;display stripes
+    (gtv-set-rules-hint widget 1) ;display stripes
       					; (fb-signal-connect selection "changed" on-selection-changed (selection))
       ;;invisible columns
-    (gtk-tree-view-column-set-visible (gtk-tree-view-get-column widget COL-ID) nil)
-    (gtk-tree-view-column-set-visible (gtk-tree-view-get-column widget COL-DIR) nil)
-    (gtk-tree-view-column-set-visible (gtk-tree-view-get-column widget COL-Q) nil)
-    (gtk-tree-view-column-set-visible (gtk-tree-view-get-column widget COL-ICON) nil)
+    (gtv-column-set-visible (gtv-get-column widget COL-ID) nil)
+    (gtv-column-set-visible (gtv-get-column widget COL-DIR) nil)
+    (gtv-column-set-visible (gtv-get-column widget COL-Q) nil)
+    (gtv-column-set-visible (gtv-get-column widget COL-ICON) nil)
       ;;
-    (gtk-tree-view-enable-grid-lines widget )
-    (gtk-tree-view-set-reorderable widget nil)
+    (gtv-enable-grid-lines widget )
+;    (gtv-grid-lines )
+    (gtv-set-reorderable widget nil)
     (setf (gtk-widget-can-focus widget) t)
     (setf (gtk-tree-view-enable-search widget) nil); prevent key eating search box
 
-
+    
       
     (gdk-threads-add-idle #'(lambda ()
 					;   (format t "IDLE..." )

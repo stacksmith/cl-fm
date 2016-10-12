@@ -18,3 +18,6 @@
   (context (g-object gdk-drag-context)))
 (export 'gdk-drag-context-get-suggested-action)
 
+(in-package :cl-fm)
+(eval-when (:compile-toplevel)
+  (abbrev-symbols :gtk "GTK-TREE-VIEW" "GTV"))

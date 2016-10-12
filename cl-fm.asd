@@ -11,8 +11,9 @@
 	       )
   :serial t
   :components ((:file "package")
-	       (:file "cl-cffi-gtk-fixes")
 	       (:file "util")
+	       (:file "abbrev-symbols")
+	       (:file "cl-cffi-gtk-fixes")
 	       (:file "fb-util")
 	       (:file "xattr")
 	       (:file "file-actions")

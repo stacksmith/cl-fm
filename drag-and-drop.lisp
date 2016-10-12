@@ -65,9 +65,9 @@
   (format t "BUTTON-PRESS ~A ~%" (gdk-event-button-state event) )
   (let* ((x (round (gdk-event-button-x event)))
 	 (y (round  (gdk-event-button-y event)))
-	 (path (gtk-tree-view-get-path-at-pos widget x y))
-	 (sel (gtk-tree-view-get-selection widget))
-	 ;;(model (gtk-tree-view-get-model widget))
+	 (path (gtv-get-path-at-pos widget x y))
+	 (sel (gtv-get-selection widget))
+	 ;;(model (gtv-get-model widget))
 	 ;;(iter (gtk-tree-model-get-iter model path))
 	 )
     (enable-selection sel nil);disallow selection!
@@ -78,7 +78,7 @@
 
 (defun on-drag-begin (widget context)
   (declare (ignore context))
-  (setf *dragged-p*  (gtk-tree-view-get-selection widget))
+  (setf *dragged-p*  (gtv-get-selection widget))
   (format t "DRAG BEGIN. DRAG ALLOWED: ~A~%" *drag-allowed*)
   (setf *dragged-onto* nil)
   (gtk-drag-source-set-icon-pixbuf widget (if *drag-allowed*
@@ -88,9 +88,9 @@
    (format t "BUTTON-RELEASE ~A ~%" (gdk-event-button-state event) )
   (let* ((x (round (gdk-event-button-x event)))
 	 (y (round  (gdk-event-button-y event)))
-	 (path (gtk-tree-view-get-path-at-pos widget x y))
-	 (sel (gtk-tree-view-get-selection widget))
-	 ;;(model (gtk-tree-view-get-model widget))
+	 (path (gtv-get-path-at-pos widget x y))
+	 (sel (gtv-get-selection widget))
+	 ;;(model (gtv-get-model widget))
 	 ;;(iter (gtk-tree-model-get-iter model path))
 	 ;; (released-on (gtk-tree-model-get-value model iter COL-ID))
 	 )
@@ -142,9 +142,9 @@
 (defun on-drag-motion (widget context x y time)
   "return T if status set, nil if drop not permitted"
   ;(format t "DRAG-MOTION allowed:~A dragged-p:~A~%" *drag-allowed* *dragged-p*)
-  (let ((path (gtk-tree-view-get-dest-row-at-pos widget x y)))
+  (let ((path (gtv-get-dest-row-at-pos widget x y)))
     (if path
-	(let((model (gtk-tree-view-get-model widget)))
+	(let((model (gtv-get-model widget)))
 	  ;;(gtk-drag-source-set-icon-pixbuf widget *pix-docs*)
 	  ;;(format t "PATH: ~A~%" path)
 	  (let ((iter (gtk-tree-model-get-iter model path) ))
@@ -155,7 +155,7 @@
 	      (if isdir	  ;t means drop allowed, otherwise nil
 		  (progn
 		    ;;(format t "DIR: drop allowed~%")
-		    (gtk-tree-view-set-drag-dest-row widget path :into-or-after)
+		    (gtv-set-drag-dest-row widget path :into-or-after)
 		    (gdk-drag-status context (gdk-drag-context-get-suggested-action context) time)			 ;; for workaround, track destination id
 		    (setf *dragged-onto* (gtk-tree-model-get-value model iter COL-ID))
 		    ;;(format t "ONTO ~A~%" *draged-onto*)
