@@ -51,23 +51,26 @@
 		    column renderer custom))
       
 
+      (gtv-column-set-reorderable column t)
       (gtv-column-set-sizing column :fixed)
       (gtv-column-set-expand column nil)
       (gtv-column-set-resizable column nil)
-      
       (gtv-column-set-sort-column-id column number)
-      (gtv-column-set-reorderable column t)
       
-
       column)))
 
 (defun create-column-name (fb number title &key (custom nil) (align nil) (scale 0.9) )
   "helper - create the name column"
   (let ((column (gtv-column-new)))
-    (gtv-column-set-title column title)
+    ;; force column min and max
+    (setf (gtk-tree-view-column-max-width column) 500
+	  (gtk-tree-view-column-min-width column) 200
+	  (gtk-tree-view-column-title column) title)
+    ;; create and pack icon renderer
     (let ((renderer-icon (gtk-cell-renderer-pixbuf-new)))
       (gtv-column-pack-start column renderer-icon :expand nil)
       (gtv-column-set-attributes column renderer-icon "pixbuf" COL-ICON))
+    ;; create and pack text renderer
     (let ((renderer (gtk-cell-renderer-text-new)))
       (setf (gtk-cell-renderer-text-scale-set renderer) t ;allow text to scale
 	    (gtk-cell-renderer-text-scale renderer) scale)   ;scale a little smaller
@@ -77,13 +80,13 @@
       (gtv-column-set-attributes column renderer "text" COL-NAME)
       
       (gtv-column-set-reorderable column t)
-      
       (gtv-column-set-sizing column :fixed)
       (gtv-column-set-expand column nil)
       (gtv-column-set-resizable column t)
-
       (gtv-column-set-sort-column-id column number)
+
       ;;special handling for name column for editing
+      ;;keep track of text renderer for editor
       (setf (filebox-column-name fb) column
 	    (filebox-renderer-name fb) renderer)
       ;; pack renderer
