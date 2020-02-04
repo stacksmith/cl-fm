@@ -32,7 +32,7 @@ Start by cloning this repo and gtk-emacs-like-input to a place where quicklisp w
 03-Feb-2020
 Hmm.  I haven't had much of an opportunity to move the project forward in some years now.  The main issue is that I discovered that CL-CFFI-GTK (impressive in scope) is highly problematic in implementation.  There seems to be a major misunderstanding of lightweight GTK foreign structures and their scope; the library creates ridiculous amount of temporaries in places where it is entirely unnecessary.  This happens at so many levels that I just gave up at some point.  I suppose no one cares much about megabytes upon megabytes of crap that needs to be immediately GC'd, but I am thoroughly disgusted.
 At the time I was also stuck with CL-CFFI-GTK's bugs having to do with copying and pasting...
-CL-MF is actually somewhat usable and I've used it for a few years in a very limited context as it allows color-coding files easily, something few fm's do.  It does not mutate anything (other than storing color attributes in metadata); copy/move/delete is not implemented.
+CL-MF is actually somewhat usable and I've used it for a few years in a very limited context as it allows color-coding files easily, something few fm's do.  It does not do much other than renaming; copy/move/delete is not implemented.
 Amazingly, after all these years, there is still no simple GUI solution (and I've grown to despise all guis anyway)..
 
 02-Oct-2016
